@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 sys.path.append('../')
-from cpu import BitManip_32 
+from bit_manipulation import BitManip_32 
 from numpy import binary_repr, issubdtype, uint32, int32
 import unittest
 import coverage
