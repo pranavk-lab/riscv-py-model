@@ -1,0 +1,18 @@
+#!/bin/bash
+
+function echo_run {
+    set -x
+    "$@"
+    set +x
+}
+
+echo "Cleaning up old coverage data"
+echo_run rm -rf htmlcov
+echo_run rm -rf .coverage
+
+coverage run --omit=/home/prankov/.local/lib/python3.8/site-packages/* ./cpu_test.py
+
+echo -e "\nCreating HTML"
+coverage html
+
+
