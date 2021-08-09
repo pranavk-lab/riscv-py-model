@@ -1,3 +1,4 @@
 .vscode
-htmlcov/*
+model/test/htmlcov/*
 __pycache__
+model/test/.coverage
