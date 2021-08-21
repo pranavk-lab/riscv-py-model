@@ -121,7 +121,7 @@ class ConditionalBranch_32(InstrExeStratergy32):
 		if core_state.REG_FILE[src1] == core_state.REG_FILE[src2] and funct3 == 0:
 			core_state.__incr_PC(offset)
 
-		elif self.REG_FILE[src1] != core_stateREG_FILE[src2] and funct3 == 1:
+		elif core_state.REG_FILE[src1] != core_state.REG_FILE[src2] and funct3 == 1:
 			core_state.__incr_PC(offset)
 
 		elif funct3 == 4 or funct3 == 6:
