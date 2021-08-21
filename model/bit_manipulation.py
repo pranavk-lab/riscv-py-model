@@ -35,7 +35,7 @@ class BitManip32:
 
 		return (bit_vector, (upper-lower) + 1)
 
-	def sign_extend_nbit_2_32bit(self, args : tuple) -> int32:
+	def sign_extend_nbit_2_int32(self, args : tuple) -> int32:
 		vector = args[0]
 		width = args[1]
 
@@ -44,7 +44,17 @@ class BitManip32:
 		mask = uint32(left_shift((self.ui32_max * last_bit), width))
 
 		return int32(bitwise_or(mask, vector))
-	
+
+	def sign_extend_nbit_2_uint32(self, args : tuple) -> uint32:
+		vector = args[0]
+		width = args[1]
+
+		last_bit = uint32(right_shift(vector, width-1))
+
+		mask = uint32(left_shift((self.ui32_max * last_bit), width))
+
+		return uint32(bitwise_or(mask, vector))
+
 	def hex_str_2_unsigned_int(self, hex_str : str) -> uint32:
 		if len(hex_str) != 8:
 			raise ValueError(f"hex_str = {hex_str} is not 32 bits long")

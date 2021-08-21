@@ -39,7 +39,7 @@ class TestBitManip32(unittest.TestCase):
         bm = BitManip32()
         hex_str = self.hex_str_high_msb
         vector = bm.hex_str_2_unsigned_int(hex_str)
-        vector_signed = bm.sign_extend_nbit_2_32bit(bm.get_sub_bits_from_instr(vector, upper, lower))
+        vector_signed = bm.sign_extend_nbit_2_int32(bm.get_sub_bits_from_instr(vector, upper, lower))
         self.assertEqual(vector_signed, -34768)
         vector_signed_binary = binary_repr(vector_signed, width=32)
         self.assertEqual(vector_signed_binary, '11111111111111110111100000110000')
@@ -50,12 +50,12 @@ class TestBitManip32(unittest.TestCase):
         upper = 31
         lower = 12
         bm = BitManip32()
-        hex_str = self.hex_str_low_msb
+        hex_str = self.hex_str_high_msb
         vector = bm.hex_str_2_unsigned_int(hex_str)
-        vector_signed = bm.sign_extend_nbit_2_32bit(bm.get_sub_bits_from_instr(vector, upper, lower))
-        self.assertEqual(vector_signed, 489520)
+        vector_signed = bm.sign_extend_nbit_2_uint32(bm.get_sub_bits_from_instr(vector, upper, lower))
+        self.assertEqual(vector_signed, 4294932528)
         vector_signed_binary = binary_repr(vector_signed, width=32) 
-        self.assertEqual(vector_signed_binary, '00000000000001110111100000110000')
+        self.assertEqual(vector_signed_binary, '11111111111111110111100000110000')
 
     def test_concat_S_type_imm(self):
         upper = 31
@@ -79,7 +79,7 @@ class TestBitManip32(unittest.TestCase):
         self.assertEqual(width4_0, (upper-lower) + 1)
 
         unsigned_concat_bits, width_simm = bm.concat_bits([(imm11_5, width11_5), (imm4_0, width4_0)])
-        concat_bits = bm.sign_extend_nbit_2_32bit((unsigned_concat_bits, width_simm))
+        concat_bits = bm.sign_extend_nbit_2_int32((unsigned_concat_bits, width_simm))
         binary_concat_bits = binary_repr(concat_bits, width_simm)
         self.assertEqual(concat_bits, 1898)
         self.assertEqual(binary_concat_bits, '011101101010')
@@ -124,7 +124,7 @@ class TestBitManip32(unittest.TestCase):
         binary_concat_bits = binary_repr(concat_bits, width_jimm)
         self.assertEqual(binary_concat_bits, '00011000001110111100')
 
-        concat_sign_ext = bm.sign_extend_nbit_2_32bit((concat_bits, width_jimm))
+        concat_sign_ext = bm.sign_extend_nbit_2_int32((concat_bits, width_jimm))
         self.assertEqual(concat_sign_ext, 99260)
         binary_conat_sign_ext = binary_repr(concat_sign_ext, width=32)
         self.assertEqual(binary_conat_sign_ext, '00000000000000011000001110111100')
