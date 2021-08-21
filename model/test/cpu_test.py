@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 import sys
 sys.path.append('../')
-from bit_manipulation import BitManip_32 
+from bit_manipulation import BitManip32 
 from numpy import binary_repr, issubdtype, uint32, int32
 import unittest
 import coverage
 
 
-class TestBitManip_32(unittest.TestCase):
+class TestBitManip32(unittest.TestCase):
 
     hex_str_high_msb = "f7830000"
     hex_str_low_msb = "77830521"
 
     def test_hex_str_2_unsigned_int(self):
-        bm = BitManip_32()
+        bm = BitManip32()
         hex_str = self.hex_str_high_msb
         vector = bm.hex_str_2_unsigned_int(hex_str)
         self.assertEqual(issubdtype(vector, uint32), True)
@@ -22,23 +22,24 @@ class TestBitManip_32(unittest.TestCase):
         # Test get_sub_bits_from_instr 
         upper = 31
         lower = 12
-        bm = BitManip_32()
+        bm = BitManip32()
         hex_str = self.hex_str_high_msb
         vector = bm.hex_str_2_unsigned_int(hex_str)
-        vector_unsigned = bm.get_sub_bits_from_instr(vector, upper, lower)
+        vector_unsigned, width = bm.get_sub_bits_from_instr(vector, upper, lower)
         self.assertEqual(vector_unsigned, 1013808)
-        vector_unsigned_binary = binary_repr(vector_unsigned, width=((upper-lower) + 1))
+        vector_unsigned_binary = binary_repr(vector_unsigned, width=width)
         self.assertEqual(vector_unsigned_binary, '11110111100000110000')
         self.assertRaises(ValueError, bm.hex_str_2_unsigned_int, 'f' + self.hex_str_low_msb)
+        self.assertEqual(width, (upper-lower) + 1)
 
     def test_sub_bits_from_instr_negetive_number(self):
         # Test get_sub_bits_from_instr negetive number
         upper = 31
         lower = 12
-        bm = BitManip_32()
+        bm = BitManip32()
         hex_str = self.hex_str_high_msb
         vector = bm.hex_str_2_unsigned_int(hex_str)
-        vector_signed = bm.sign_extend_nbit_2_32bit(bm.get_sub_bits_from_instr(vector, upper, lower), ((upper-lower) + 1))
+        vector_signed = bm.sign_extend_nbit_2_32bit(bm.get_sub_bits_from_instr(vector, upper, lower))
         self.assertEqual(vector_signed, -34768)
         vector_signed_binary = binary_repr(vector_signed, width=32)
         self.assertEqual(vector_signed_binary, '11111111111111110111100000110000')
@@ -48,10 +49,10 @@ class TestBitManip_32(unittest.TestCase):
         # Test get_sub_bits_from_instr positive number
         upper = 31
         lower = 12
-        bm = BitManip_32()
+        bm = BitManip32()
         hex_str = self.hex_str_low_msb
         vector = bm.hex_str_2_unsigned_int(hex_str)
-        vector_signed = bm.sign_extend_nbit_2_32bit(bm.get_sub_bits_from_instr(vector, upper, lower), ((upper-lower) + 1))
+        vector_signed = bm.sign_extend_nbit_2_32bit(bm.get_sub_bits_from_instr(vector, upper, lower))
         self.assertEqual(vector_signed, 489520)
         vector_signed_binary = binary_repr(vector_signed, width=32) 
         self.assertEqual(vector_signed_binary, '00000000000001110111100000110000')
@@ -59,64 +60,71 @@ class TestBitManip_32(unittest.TestCase):
     def test_concat_S_type_imm(self):
         upper = 31
         lower = 25
-        bm = BitManip_32()
+        bm = BitManip32()
         hex_str = self.hex_str_low_msb
         vector = bm.hex_str_2_unsigned_int(hex_str)
-        imm11_5 = bm.get_sub_bits_from_instr(vector, upper, lower)
+        imm11_5, width11_5 = bm.get_sub_bits_from_instr(vector, upper, lower)
         self.assertEqual(imm11_5, 59)
-        binary_imm11_5 = binary_repr(imm11_5, width=((upper-lower) + 1))
+        binary_imm11_5 = binary_repr(imm11_5, width11_5)
         self.assertEqual(binary_imm11_5, '0111011')
+        self.assertEqual(width11_5, (upper-lower) + 1)
 
         upper = 11
         lower = 7
         vector = bm.hex_str_2_unsigned_int(hex_str)
-        imm4_0 = bm.get_sub_bits_from_instr(vector, upper, lower)
+        imm4_0, width4_0 = bm.get_sub_bits_from_instr(vector, upper, lower)
         self.assertEqual(imm4_0, 10)
-        binary_imm4_0 = binary_repr(imm4_0, width=((upper-lower) + 1))
+        binary_imm4_0 = binary_repr(imm4_0, width4_0)
         self.assertEqual(binary_imm4_0, '01010')
+        self.assertEqual(width4_0, (upper-lower) + 1)
 
-        concat_bits = bm.sign_extend_nbit_2_32bit(bm.concat_bits([(imm11_5, 31-25 + 1), (imm4_0, 11-7 + 1)]), 12)
-        binary_concat_bits = binary_repr(concat_bits, width=12)
+        unsigned_concat_bits, width_simm = bm.concat_bits([(imm11_5, width11_5), (imm4_0, width4_0)])
+        concat_bits = bm.sign_extend_nbit_2_32bit((unsigned_concat_bits, width_simm))
+        binary_concat_bits = binary_repr(concat_bits, width_simm)
         self.assertEqual(concat_bits, 1898)
         self.assertEqual(binary_concat_bits, '011101101010')
 
     def test_concat_J_imm(self):
         upper = 31
         lower = 31
-        bm = BitManip_32()
+        bm = BitManip32()
         hex_str = self.hex_str_low_msb
         vector = bm.hex_str_2_unsigned_int(hex_str)
-        imm20 = bm.get_sub_bits_from_instr(vector, upper, lower)
+        imm20, width20 = bm.get_sub_bits_from_instr(vector, upper, lower)
         self.assertEqual(imm20, 0)
-        binary_imm20 = binary_repr(imm20, width=((upper-lower) + 1))
+        binary_imm20 = binary_repr(imm20, width20)
         self.assertEqual(binary_imm20, '0')
+        self.assertEqual(width20, (upper-lower) + 1)
 
         upper = 19
         lower = 12 
-        imm19_12 = bm.get_sub_bits_from_instr(vector, upper, lower)
+        imm19_12, width19_12 = bm.get_sub_bits_from_instr(vector, upper, lower)
         self.assertEqual(imm19_12, 48)
-        binary_imm19_12 = binary_repr(imm19_12, width=((upper-lower) + 1))
+        binary_imm19_12 = binary_repr(imm19_12, width19_12)
         self.assertEqual(binary_imm19_12, '00110000')
+        self.assertEqual(width19_12, (upper-lower) + 1)
 
         upper = 20
         lower = 20
-        imm11 = bm.get_sub_bits_from_instr(vector, upper, lower)
+        imm11, width11 = bm.get_sub_bits_from_instr(vector, upper, lower)
         self.assertEqual(imm11, 0)
-        binary_imm11 = binary_repr(imm11, width=((upper-lower) + 1))
+        binary_imm11 = binary_repr(imm11, width11)
         self.assertEqual(binary_imm11, '0')
+        self.assertEqual(width11, (upper-lower) + 1)
 
         upper = 30
         lower = 21
-        imm10_1 = bm.get_sub_bits_from_instr(vector, upper, lower)
+        imm10_1, width10_1 = bm.get_sub_bits_from_instr(vector, upper, lower)
         self.assertEqual(imm10_1, 956)
-        binary_imm10_1 = binary_repr(imm10_1, width=((upper-lower) + 1))
+        binary_imm10_1 = binary_repr(imm10_1, width10_1)
         self.assertEqual(binary_imm10_1, '1110111100')
+        self.assertEqual(width10_1, (upper-lower) + 1)
 
-        concat_bits = bm.concat_bits([(imm20, (31-31) + 1), (imm19_12, (19-12) + 1), (imm11, (20-20) +1), (imm10_1, (30-21) +1)])
-        binary_concat_bits = binary_repr(concat_bits, width=20)
+        concat_bits, width_jimm = bm.concat_bits([(imm20, width20), (imm19_12, width19_12), (imm11, width11), (imm10_1, width10_1)])
+        binary_concat_bits = binary_repr(concat_bits, width_jimm)
         self.assertEqual(binary_concat_bits, '00011000001110111100')
 
-        concat_sign_ext = bm.sign_extend_nbit_2_32bit(concat_bits, 20)
+        concat_sign_ext = bm.sign_extend_nbit_2_32bit((concat_bits, width_jimm))
         self.assertEqual(concat_sign_ext, 99260)
         binary_conat_sign_ext = binary_repr(concat_sign_ext, width=32)
         self.assertEqual(binary_conat_sign_ext, '00000000000000011000001110111100')

@@ -4,7 +4,7 @@ from numpy import left_shift, right_shift
 from numpy import issubdtype, binary_repr
 from typing import List
 
-class BitManip_32:
+class BitManip32:
 	""" Basic HW developer friendly bit manipulation class """
 
 	ui32_max = uint32(iinfo(uint32).max)
@@ -13,16 +13,16 @@ class BitManip_32:
 
 	# Concats bit vectors. Provide list of tuples as input. where: a is uint32 value, width = len(bin(a))
 	# args = [(input, width), (input, width), .....]
-	def concat_bits(self, args : List[tuple]) -> uint32:
+	def concat_bits(self, args : List[tuple]) -> tuple:
 		concat_str = ""
 		for x in args:
 			concat_str += binary_repr(x[0], width=x[1])
 
-		return uint32(int(concat_str, 2))
+		return uint32(int(concat_str, 2)), len(concat_str)
 		
 	# Gets a bit vector from upper to lower. Returns a int32 value. Input index should match verilog spec
 	# For example : input[7:0] -> 8 bit vector. provide upper = 7, lower = 0. 
-	def get_sub_bits_from_instr(self, instr: uint32, upper : int, lower : int = 0) -> int32:
+	def get_sub_bits_from_instr(self, instr: uint32, upper : int, lower : int = 0) -> tuple:
 
 		if upper < lower:
 			raise ValueError("Upper cannot be less than lower")
@@ -33,9 +33,12 @@ class BitManip_32:
 		# discard LSB bits upto "lower"
 		bit_vector = right_shift(instr, ((31-upper) + lower))
 
-		return bit_vector
+		return (bit_vector, (upper-lower) + 1)
 
-	def sign_extend_nbit_2_32bit(self, vector: uint32, width: int) -> int32:
+	def sign_extend_nbit_2_32bit(self, args : tuple) -> int32:
+		vector = args[0]
+		width = args[1]
+
 		last_bit = uint32(right_shift(vector, width-1))
 
 		mask = uint32(left_shift((self.ui32_max * last_bit), width))
