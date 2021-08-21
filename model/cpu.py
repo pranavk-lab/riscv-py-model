@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+from io import open_code
 from elf_decode.elf_decode import ELF_DECODE
 from typing import List
 from abc import ABC, abstractmethod
 from bit_manipulation import BitManip32 as bm
 from numpy import uint32, uint64
+from numpy import left_shift, right_shift
 
 class CPU():
 	
@@ -176,11 +178,13 @@ class LoadUpperImm_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "0110111" or bm.opcode == "0010111":
 
-		u_imm = bm.concat_bits([bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)])[0]
+		opcode, w7 = bm.get_sub_bits_from_instr(instr, 6, 0)
 
-		dst = bm.get_sub_bits_from_instr(instr, 11, 7)[0]
+		u_imm, w32 = bm.concat_bits([bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)])
 
-		if bm.opcode == "0110111":
+		dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
+
+		if opcode == "0110111":
 			core_state.REG_FILE[dst] = u_imm
 		else: 
 			core_state.__incr_PC(u_imm)
@@ -194,9 +198,17 @@ class RegImmInt_32(InstrExeStratergy):
 		
 		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 
-		imm_arith, w12 = bm.get_sub_bits_from_instr(instr, 31, 20)
+		imm_arith_v = bm.get_sub_bits_from_instr(instr, 31, 20)
 
-		imm_shift, w7 = bm.get_sub_bits_from_instr(instr, 31, 25)
+		imm_shift_v = bm.get_sub_bits_from_instr(instr, 31, 25)
+
+		unsigned_imm_arith = bm.sign_extend_nbit_2_uint32(imm_arith_v)
+
+		signed_imm_arith = bm.sign_extend_nbit_2_int32(imm_arith_v)
+
+		signed_imm_shift = bm.sign_extend_nbit_2_int32(imm_shift_v)
+
+		unsigned_imm_shift = bm.sign_extend_nbit_2_uint32(imm_shift_v)
 
 		shamt, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 
@@ -204,14 +216,19 @@ class RegImmInt_32(InstrExeStratergy):
 
 		dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
+		result = 0
+
 		if funct3 == 0:
-			core_state.REG_FILE[dest] = core_state.REG_FILE[src] + core_state.REG_FILE[imm_arith]
+			result = core_state.REG_FILE[src] + signed_imm_arith
 			
 		elif funct3 == 1:	
-			core_state.REG_FILE[dest] = core_state.REG_FILE[src] << shamt
+			#TODO: implement left shift using numpy
+			pass
 		
 		elif funct3 == 2:
-			core_state.REG_FILE[dest] = core_state.REG_FILE[src] 
+			result = core_state.REG_FILE[src] 
+
+		core_state.REG_FILE[dest] = result
 		#TODO: Finish this routine
 	
 		return core_state
@@ -232,7 +249,7 @@ class Load_32(InstrExeStratergy):
 	#TODO: finish this routine
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "0000011":
-		imm = bm.sign_extend_nbit_2_32bit(bm.get_sub_bits_from_instr(instr, 31, 20))
+		imm = bm.sign_extend_nbit_2_int32(bm.get_sub_bits_from_instr(instr, 31, 20))
 		src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 		dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
