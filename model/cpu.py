@@ -4,8 +4,8 @@ from elf_decode.elf_decode import ELF_DECODE
 from typing import List
 from abc import ABC, abstractmethod
 from bit_manipulation import BitManip32 as bm
-from numpy import uint32, uint64
-from numpy import left_shift, right_shift
+from numpy import int32, uint32, uint64
+from numpy import left_shift, right_shift, bitwise_and, bitwise_xor, bitwise_or
 
 class CPU():
 	
@@ -54,7 +54,7 @@ class RV32ICORE:
 	""" This class defines the RV32I compatible CORE """ 
 
 	PC: int = 0
-	REG_FILE: List[int] = [0] * 32
+	REG_FILE: List[uint32] = [uint32(0)] * 32
 	xlen: int = 32
 
 	def __init__(self, memory: Memory32):
@@ -192,6 +192,7 @@ class LoadUpperImm_32(InstrExeStratergy):
 		return core_state
 		
 
+#TODO: See if you can optimize the if else statements
 class RegImmInt_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "0010011":
@@ -206,10 +207,6 @@ class RegImmInt_32(InstrExeStratergy):
 
 		signed_imm_arith = bm.sign_extend_nbit_2_int32(imm_arith_v)
 
-		signed_imm_shift = bm.sign_extend_nbit_2_int32(imm_shift_v)
-
-		unsigned_imm_shift = bm.sign_extend_nbit_2_uint32(imm_shift_v)
-
 		shamt, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 
 		src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
@@ -218,19 +215,55 @@ class RegImmInt_32(InstrExeStratergy):
 
 		result = 0
 
+		# ADDI
 		if funct3 == 0:
-			result = core_state.REG_FILE[src] + signed_imm_arith
+			result = int32(core_state.REG_FILE[src]) + signed_imm_arith
 			
+		# SLLI
 		elif funct3 == 1:	
-			#TODO: implement left shift using numpy
-			pass
+			result = left_shift(core_state.REG_FILE[src], shamt)
 		
+		# SLTI
 		elif funct3 == 2:
-			result = core_state.REG_FILE[src] 
+			if core_state.REG_FILE[src] < signed_imm_arith:
+				result = 1
+			else:
+				result = 0
 
-		core_state.REG_FILE[dest] = result
-		#TODO: Finish this routine
-	
+		# SLTIU
+		elif funct3 == 3:
+			if core_state.REG_FILE[src] < unsigned_imm_arith:
+				result = 1
+			else:
+				result = 0
+		
+		# XORI
+		elif funct3 == 4:
+			result = bitwise_xor(core_state.REG_FILE[src], unsigned_imm_arith)
+
+		# SRL | SRA
+		elif funct3 == 5:
+
+			# SRA
+			if imm_shift_v == 32:
+				result = right_shift(int32(core_state.REG_FILE[src]), shamt)
+			
+			# SRL
+			elif imm_shift_v == 0:
+				result = right_shift(core_state.REG_FILE[src], shamt)
+			
+			else:
+				raise ValueError(f" immediate[11:5] needs to be either 32 or 0. Actual imm = {imm_shift_v}")
+		
+		# OR
+		elif funct3 == 6:
+			result = bitwise_or(core_state.REG_FILE[src], unsigned_imm_arith)
+		
+		elif funct3 == 7:
+			result = bitwise_and(core_state.REG_FILE[src], unsigned_imm_arith)
+
+		core_state.REG_FILE[dest] = uint32(result)
+
 		return core_state
 
 
