@@ -4,7 +4,7 @@ from elf_decode.elf_decode import ELF_DECODE
 from typing import List
 from abc import ABC, abstractmethod
 from bit_manipulation import BitManip32 as bm
-from numpy import int32, uint32, uint64
+from numpy import core, int32, uint32, uint64
 from numpy import left_shift, right_shift, bitwise_and, bitwise_xor, bitwise_or
 
 class CPU():
@@ -199,9 +199,9 @@ class RegImmInt_32(InstrExeStratergy):
 		
 		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 
-		imm_arith_v = bm.get_sub_bits_from_instr(instr, 31, 20)
+		imm_arith_v, w12 = bm.get_sub_bits_from_instr(instr, 31, 20)
 
-		imm_shift_v = bm.get_sub_bits_from_instr(instr, 31, 25)
+		imm_shift_v, w7 = bm.get_sub_bits_from_instr(instr, 31, 25)
 
 		unsigned_imm_arith = bm.sign_extend_nbit_2_uint32(imm_arith_v)
 
@@ -259,6 +259,7 @@ class RegImmInt_32(InstrExeStratergy):
 		elif funct3 == 6:
 			result = bitwise_or(core_state.REG_FILE[src], unsigned_imm_arith)
 		
+		# AND
 		elif funct3 == 7:
 			result = bitwise_and(core_state.REG_FILE[src], unsigned_imm_arith)
 
@@ -270,11 +271,83 @@ class RegImmInt_32(InstrExeStratergy):
 class RegRegInt_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "0110011":
+
 		src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
+
 		src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+
+		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
+
+		funct7, w7 = bm.get_sub_bits_from_instr(instr, 31, 25)
+
 		dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
-		#TODO: Finish this routine
-	
+
+		src1_val = core_state.REG_FILE[src1]
+
+		src2_val = core_state.REG_FILE[src2]
+
+		result = 0
+
+		# ADD | SUB
+		if funct3 == 0:
+
+			# ADD
+			if funct7 == 0:
+				result = src1_val + src2_val
+
+			# SUB
+			elif funct7 == 32:
+				result = src1_val - src2_val
+
+			else:
+				raise ValueError(f"funct7 needs to be either 32 or 0. Actual funct7 = {funct7}")
+			
+		# SLL
+		elif funct3 == 1:	
+			result = left_shift(src1_val, bm.get_sub_bits_from_instr(src2_val, 4, 0))
+		
+		# SLT
+		elif funct3 == 2:
+			if int32(src1_val) < int32(src2_val):
+				result = 1
+			else:
+				result = 0
+
+		# SLTIU
+		elif funct3 == 3:
+			if src1_val < src2_val:
+				result = 1
+			else:
+				result = 0
+		
+		# XORI
+		elif funct3 == 4:
+			result = bitwise_xor(src1_val, src2_val)
+
+		# SRL | SRA
+		elif funct3 == 5:
+
+			# SRA
+			if funct7 == 32:
+				result = right_shift(int32(src1_val), bm.get_sub_bits_from_instr(src2_val, 4, 0))
+			
+			# SRL
+			elif funct7 == 0:
+				result = right_shift(src1_val, bm.get_sub_bits_from_instr(src2_val, 4, 0))
+			
+			else:
+				raise ValueError(f" funct7 needs to be either 32 or 0. Actual funct7 = {funct7}")
+		
+		# OR
+		elif funct3 == 6:
+			result = bitwise_or(src1_val, src2_val)
+		
+		# AND
+		elif funct3 == 7:
+			result = bitwise_and(src1_val, src2_val)
+
+		core_state.REG_FILE[dest] = uint32(result)
+
 		return core_state
 
 
