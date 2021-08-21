@@ -11,7 +11,7 @@ class CPU():
 		pass
 
 
-class InstrExeStratergy32(ABC):
+class InstrExeStratergy(ABC):
 	@abstractmethod
 	def exe_instr(self, instr: uint32, core_state):
 		pass
@@ -91,17 +91,17 @@ class RV32ICORE:
 		# Get 32 bit data in memory[PC], then PC++
 		return self.address_space[self.__incr_PC]
 				
-	def __decode(self, instr : uint32) -> InstrExeStratergy32:
+	def __decode(self, instr : uint32) -> InstrExeStratergy:
 		#TODO: finish this function
 		pass
 
-	def __execute(self, instr: uint32, exe_stratergy: InstrExeStratergy32):
+	def __execute(self, instr: uint32, exe_stratergy: InstrExeStratergy):
 
 		# Run exe stratergy
 		self = exe_stratergy.exe_instr(instr, self)
 		
 
-class ConditionalBranch_32(InstrExeStratergy32):
+class ConditionalBranch_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 
 		opcode, w7 = bm.get_sub_bits_from_instr(instr, 6, 0)
@@ -135,7 +135,7 @@ class ConditionalBranch_32(InstrExeStratergy32):
 		return core_state
 
 
-class JumpAndLinkRegsiter_32(InstrExeStratergy32):
+class JumpAndLinkRegsiter_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		
 		offset, w12 = bm.get_sub_bits_from_instr(instr, 31, 20)
@@ -151,7 +151,7 @@ class JumpAndLinkRegsiter_32(InstrExeStratergy32):
 		return core_state
 			
 
-class JumpAndLink_32(InstrExeStratergy32):
+class JumpAndLink_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "1101111":
 
@@ -172,7 +172,7 @@ class JumpAndLink_32(InstrExeStratergy32):
 		return core_state
 
 
-class LoadUpperImm_32(InstrExeStratergy32):
+class LoadUpperImm_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "0110111" or bm.opcode == "0010111":
 
@@ -188,7 +188,7 @@ class LoadUpperImm_32(InstrExeStratergy32):
 		return core_state
 		
 
-class RegImmInt_32(InstrExeStratergy32):
+class RegImmInt_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "0010011":
 		
@@ -217,7 +217,7 @@ class RegImmInt_32(InstrExeStratergy32):
 		return core_state
 
 
-class RegRegInt_32(InstrExeStratergy32):
+class RegRegInt_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "0110011":
 		src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
@@ -228,7 +228,7 @@ class RegRegInt_32(InstrExeStratergy32):
 		return core_state
 
 
-class Load_32(InstrExeStratergy32):
+class Load_32(InstrExeStratergy):
 	#TODO: finish this routine
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "0000011":
@@ -249,7 +249,7 @@ class Load_32(InstrExeStratergy32):
 		return core_state
 		
 
-class Store_32(InstrExeStratergy32):
+class Store_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "0100011":
 	
