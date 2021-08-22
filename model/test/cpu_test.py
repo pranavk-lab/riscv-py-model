@@ -3,7 +3,7 @@ import sys
 sys.path.append('../')
 from bit_manipulation import BitManip32 
 from cpu import RV32ICORE
-from numpy import binary_repr, issubdtype, uint32, int32
+from numpy import binary_repr, isfinite, issubdtype, uint32, int32, iinfo
 import unittest
 import coverage
 
@@ -140,8 +140,8 @@ class TestCPU(unittest.TestCase):
         instr = bm.hex_str_2_unsigned_int("00208663")
 
         # Initialize core registers
-        core.REG_FILE[1] = 5
-        core.REG_FILE[2] = 5
+        core.REG_FILE[1] = -5
+        core.REG_FILE[2] = -5
 
         # PC offset
         offset = 6
@@ -161,8 +161,218 @@ class TestCPU(unittest.TestCase):
         instr = bm.hex_str_2_unsigned_int("00208663")
 
         # Initialize core registers
-        core.REG_FILE[1] = 5
-        core.REG_FILE[2] = 6
+        core.REG_FILE[1] = -5
+        core.REG_FILE[2] = -6
+
+        # PC offset
+        offset = 6
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, 4)
+
+    def test_conditional_branch_not_equals_true(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("28301863")
+
+        # Initialize core registers
+        core.REG_FILE[0] = 0
+        core.REG_FILE[3] = 6
+
+        # PC offset
+        offset = 328
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, offset)
+
+    def test_conditional_branch_not_equals_false(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("28301863")
+
+        # Initialize core registers
+        core.REG_FILE[0] = 0
+        core.REG_FILE[3] = 0
+
+        # PC offset
+        offset = 328
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, 4)
+
+    def test_conditional_branch_lt_true(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("00054c63")
+
+        # Initialize core registers
+        core.REG_FILE[10] = -1
+        core.REG_FILE[0] = 0
+
+        # PC offset
+        offset = 12
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, offset)
+
+    def test_conditional_branch_lt_false(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("00054c63")
+
+        # Initialize core registers
+        core.REG_FILE[10] = 1
+        core.REG_FILE[0] = 0
+
+        # PC offset
+        offset = 12
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, 4)
+
+    def test_conditional_branch_gt_true(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020d663")
+
+        # Initialize core registers
+        core.REG_FILE[1] = 1
+        core.REG_FILE[2] = -1
+
+        # PC offset
+        offset = 6
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, offset)
+
+    def test_conditional_branch_gt_false(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020d663")
+
+        # Initialize core registers
+        core.REG_FILE[1] = -1
+        core.REG_FILE[2] = 1
+
+        # PC offset
+        offset = 6
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, 4)
+
+    def test_conditional_branch_ltu_true(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020e663")
+
+        # Initialize core registers
+        core.REG_FILE[1] = uint32(iinfo(uint32).max)-1
+        core.REG_FILE[2] = uint32(iinfo(uint32).max)
+
+        # PC offset
+        offset = 6
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, offset)
+
+    def test_conditional_branch_ltu_false(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020e663")
+
+        # Initialize core registers
+        core.REG_FILE[1] = uint32(iinfo(uint32).max)
+        core.REG_FILE[2] = uint32(iinfo(uint32).max)
+
+        # PC offset
+        offset = 6
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, 4)
+
+    def test_conditional_branch_geu_true(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020f663")
+
+        # Initialize core registers
+        core.REG_FILE[1] = uint32(iinfo(uint32).max)
+        core.REG_FILE[2] = uint32(iinfo(uint32).max)-1
+
+        # PC offset
+        offset = 6
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, offset)
+
+    def test_conditional_branch_geu_false(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020f663")
+
+        # Initialize core registers
+        core.REG_FILE[1] = uint32(iinfo(uint32).max)
+        core.REG_FILE[2] = uint32(iinfo(uint32).max)
 
         # PC offset
         offset = 6
