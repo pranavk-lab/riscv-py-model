@@ -131,8 +131,7 @@ class RV32ICORE:
 			return Store_32
 		
 		elif opcode6_2 == 0x03:
-			#TODO: add fence instruction
-			pass
+			return Fence_32			
 
 		else:
 			raise ValueError(f" Not a valid RV32I instruction. instr[6:2] = {opcode6_2}")
@@ -476,6 +475,11 @@ class Store_32(InstrExeStratergy):
 	
 		return core_state
 
+
+class Fence_32(InstrExeStratergy):
+	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
+		#TODO: finish this routine
+		return core_state	
 
 class Hex:
 
