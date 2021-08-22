@@ -134,6 +134,9 @@ class ConditionalBranch_32(InstrExeStratergy):
 			if core_state.REG_FILE[src1] > core_state.REG_FILE[src2]:
 				core_state.incr_PC[offset]
 		
+		else:
+			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 7. Actual funct3 = {funct3}")
+		
 		return core_state
 
 
@@ -262,6 +265,9 @@ class RegImmInt_32(InstrExeStratergy):
 		# AND
 		elif funct3 == 7:
 			result = bitwise_and(core_state.REG_FILE[src], unsigned_imm_arith)
+		
+		else:
+			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 7. Actual funct3 = {funct3}")
 
 		core_state.REG_FILE[dest] = uint32(result)
 
@@ -345,6 +351,9 @@ class RegRegInt_32(InstrExeStratergy):
 		# AND
 		elif funct3 == 7:
 			result = bitwise_and(src1_val, src2_val)
+		
+		else:
+			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 7. Actual funct3 = {funct3}")
 
 		core_state.REG_FILE[dest] = uint32(result)
 
@@ -375,8 +384,7 @@ class Load_32(InstrExeStratergy):
 			mem_data = bm.sign_extend_nbit_2_uint32(core_state.memory[mem_addr])
 				
 		else:
-			#TODO: add a raise value error if funct3 is out of scope
-			pass
+			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 5. Actual funct3 = {funct3}")
 
 		core_state.REG_FILE[dest] = uint32(mem_data)
 	
