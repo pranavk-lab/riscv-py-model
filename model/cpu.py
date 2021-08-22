@@ -6,7 +6,7 @@ from elf_decode.elf_decode import ELF_DECODE
 from typing import List
 from abc import ABC, abstractmethod
 from bit_manipulation import BitManip32 
-from numpy import int32, uint32, uint64
+from numpy import int32, uint32, uint64, iinfo
 from numpy import left_shift, right_shift, bitwise_and, bitwise_xor, bitwise_or
 
 class CPU():
@@ -230,9 +230,6 @@ class ConditionalBranch_32(InstrExeStratergy):
 			else:
 				core_state.incr_PC()
 		
-		else:
-			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 7. Actual funct3 = {funct3}")
-		
 		return core_state
 
 
@@ -378,9 +375,6 @@ class RegImmInt_32(InstrExeStratergy):
 		elif funct3 == 7:
 			result = bitwise_and(core_state.REG_FILE[src], unsigned_imm_arith)
 		
-		else:
-			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 7. Actual funct3 = {funct3}")
-
 		core_state.REG_FILE[dest] = uint32(result)
 
 		core_state.incr_PC()
@@ -467,9 +461,6 @@ class RegRegInt_32(InstrExeStratergy):
 		elif funct3 == 7:
 			result = bitwise_and(src1_val, src2_val)
 		
-		else:
-			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 7. Actual funct3 = {funct3}")
-
 		core_state.REG_FILE[dest] = uint32(result)
 
 		core_state.incr_PC()
@@ -572,7 +563,11 @@ if __name__ == "__main__":
 
 	core = RV32ICORE()
 	bm = BitManip32()
-	instr = bm.hex_str_2_unsigned_int("00054c63")
+	instr = bm.hex_str_2_unsigned_int("0020f663")
+	print(f"instruction = {binary_repr(instr, 32)}")
+
+	core.REG_FILE[1] = uint32(iinfo(uint32).max)
+	core.REG_FILE[2] = uint32(iinfo(uint32).max)-1
 
 	offset, width_offset = bm.concat_bits([
 		bm.get_sub_bits_from_instr(instr, 31, 31),
@@ -581,11 +576,13 @@ if __name__ == "__main__":
 		bm.get_sub_bits_from_instr(instr, 11, 8)
 	])
 
+	funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 	src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 	src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 	print(f"offset = {offset}")
 	print(f"src1 = {src1}")
 	print(f"src2 = {src2}")
+	print(f"funct3 = {funct3}")
 	core.core_dump("input_mem.dump", "input_reg.dump")
 	core.memory[0] = instr
 	core.st_run()
