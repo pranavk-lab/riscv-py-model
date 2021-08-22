@@ -129,4 +129,11 @@ class TestBitManip32(unittest.TestCase):
         binary_conat_sign_ext = binary_repr(concat_sign_ext, width=32)
         self.assertEqual(binary_conat_sign_ext, '00000000000000011000001110111100')
 
+
+class TestCPU(unittest.TestCase):
+
+    def test_conditional_branch_equals(self):
+        instr = "00208663"
+
+
 unittest.main()
