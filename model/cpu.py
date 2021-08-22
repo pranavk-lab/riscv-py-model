@@ -6,7 +6,7 @@ from elf_decode.elf_decode import ELF_DECODE
 from typing import List
 from abc import ABC, abstractmethod
 from bit_manipulation import BitManip32 
-from numpy import core, int32, uint32, uint64
+from numpy import int32, uint32, uint64
 from numpy import left_shift, right_shift, bitwise_and, bitwise_xor, bitwise_or
 
 class CPU():
@@ -121,8 +121,7 @@ class RV32ICORE:
 			
 	def fetch(self) -> uint32:
 
-		# Get 32 bit data in memory[PC], then PC++
-		return uint32(self.memory[self.incr_PC()])
+		return uint32(self.memory[self.PC])
 				
 	# TODO: optimize the opcode if-else statements
 	def decode(self, instr : uint32) -> InstrExeStratergy:
@@ -192,19 +191,29 @@ class ConditionalBranch_32(InstrExeStratergy):
 		src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 		src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 
-		if core_state.REG_FILE[src1] == core_state.REG_FILE[src2] and funct3 == 0:
-			core_state.incr_PC(offset)
+		if funct3 == 0:
+			if core_state.REG_FILE[src1] == core_state.REG_FILE[src2]:
+				core_state.incr_PC(offset)
+			else:
+				core_state.incr_PC()
 
-		elif core_state.REG_FILE[src1] != core_state.REG_FILE[src2] and funct3 == 1:
-			core_state.incr_PC(offset)
+		elif funct3 == 1:
+			if core_state.REG_FILE[src1] != core_state.REG_FILE[src2]:
+				core_state.incr_PC(offset)
+			else:
+				core_state.incr_PC()
 
 		elif funct3 == 4 or funct3 == 6:
 			if core_state.REG_FILE[src1] < core_state.REG_FILE[src2]:
 				core_state.incr_PC(offset)
+			else:
+				core_state.incr_PC()
 		
 		elif funct3 == 5 or funct3 == 7:
 			if core_state.REG_FILE[src1] > core_state.REG_FILE[src2]:
-				core_state.incr_PC[offset]
+				core_state.incr_PC(offset)
+			else:
+				core_state.incr_PC()
 		
 		else:
 			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 7. Actual funct3 = {funct3}")
@@ -262,6 +271,8 @@ class LoadUpperImm_32(InstrExeStratergy):
 		dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
 		core_state.REG_FILE[dst] = u_imm
+
+		core_state.incr_PC()
 		
 		return core_state
 		
@@ -275,8 +286,8 @@ class AddUpperImmPC_32(InstrExeStratergy):
 
 		dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
-		core_state.REG_FILE[dst] = u_imm + core_state.PC
-		
+		core_state.REG_FILE[dst] = u_imm + core_state.incr_PC()
+
 		return core_state
 
 
@@ -356,6 +367,8 @@ class RegImmInt_32(InstrExeStratergy):
 			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 7. Actual funct3 = {funct3}")
 
 		core_state.REG_FILE[dest] = uint32(result)
+
+		core_state.incr_PC()
 
 		return core_state
 
@@ -444,6 +457,8 @@ class RegRegInt_32(InstrExeStratergy):
 
 		core_state.REG_FILE[dest] = uint32(result)
 
+		core_state.incr_PC()
+
 		return core_state
 
 
@@ -476,6 +491,8 @@ class Load_32(InstrExeStratergy):
 			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 5. Actual funct3 = {funct3}")
 
 		core_state.REG_FILE[dest] = uint32(mem_data)
+
+		core_state.incr_PC()
 	
 		return core_state
 		
@@ -516,6 +533,8 @@ class Store_32(InstrExeStratergy):
 		src2_tpl = bm.get_sub_bits_from_instr(core_state.REG_FILE[src2], upper, 0)
 
 		core_state.memory[mem_addr] = bm.sign_extend_nbit_2_uint32(src2_tpl)
+
+		core_state.incr_PC()
 	
 		return core_state
 
@@ -547,7 +566,11 @@ if __name__ == "__main__":
 		bm.get_sub_bits_from_instr(instr, 11, 8)
 	])
 
-	print(offset)
+	src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+	src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
+	print(f"offset = {offset}")
+	print(f"src1 = {src1}")
+	print(f"src2 = {src2}")
 	core.core_dump("input_mem.dump", "input_reg.dump")
 	core.memory[0] = instr
 	core.st_run()
