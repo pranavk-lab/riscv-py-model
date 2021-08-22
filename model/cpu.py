@@ -352,22 +352,33 @@ class RegRegInt_32(InstrExeStratergy):
 
 
 class Load_32(InstrExeStratergy):
-	#TODO: finish this routine
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
-		# elif bm.opcode == "0000011":
-		imm = bm.sign_extend_nbit_2_int32(bm.get_sub_bits_from_instr(instr, 31, 20))
-		src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
-		dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
-		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
-		effective_address = core_state.REG_FILE[src1] + imm
 
-		if funct3 == 0:
-			pass
-			# core_state.REG_FILE[dest] = core_state.address_space[effective_address]
+		imm, w12 = bm.get_sub_bits_from_instr(instr, 31, 20)
+
+		src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+
+		dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
+
+		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
+
+		mem_addr = core_state.REG_FILE[src] + bm.sign_extend_nbit_2_int32((imm, w12))
+
+		mem_data = 0
+
+		# signed loads
+		if funct3 <= 2:
+			mem_data = bm.sign_extend_nbit_2_int32(core_state.memory[mem_addr])
 		
-		elif funct3 == 1:
-			#TODO: implement a memory class
+		# unsigned loads
+		elif funct3 > 2 and funct3 < 6:
+			mem_data = bm.sign_extend_nbit_2_uint32(core_state.memory[mem_addr])
+				
+		else:
+			#TODO: add a raise value error if funct3 is out of scope
 			pass
+
+		core_state.REG_FILE[dest] = uint32(mem_data)
 	
 		return core_state
 		
