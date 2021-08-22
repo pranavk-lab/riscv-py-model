@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 from io import open_code
+
+from numpy.core.numeric import binary_repr
 from elf_decode.elf_decode import ELF_DECODE
 from typing import List
 from abc import ABC, abstractmethod
-from bit_manipulation import BitManip32 as bm
+from bit_manipulation import BitManip32 
 from numpy import core, int32, uint32, uint64
 from numpy import left_shift, right_shift, bitwise_and, bitwise_xor, bitwise_or
 
@@ -53,53 +55,84 @@ class InstrExeStratergy(ABC):
 class RV32ICORE:
 	""" This class defines the RV32I compatible CORE """ 
 
-	PC: int = 0
+	PC: uint32 = uint32(0)
 	REG_FILE: List[uint32] = [uint32(0)] * 32
 	xlen: int = 32
+	mem_dump_file_name: str = "./mem.dump"
+	reg_dump_file_name: str = "./reg.dump"
 
 	def __init__(self, mem_size: int = 1024):
-		self.memory = [uint32(0)] * mem_size
+		self.mem_size = mem_size
+		self.memory = [0] * mem_size
 
-	def __incr_PC(self, factor: int=0x4):
+	def incr_PC(self, factor: int=0x4):
 		# Store a temporary PC
 		PC = self.PC
 
 		self.PC+=factor
 		if self.PC >= self.mem_size:
-			self.PC = int(0)
+			self.PC = uint32(0)
 
 		# Return old PC 
 		return PC
+	
+	def core_dump(self, mem_dmp="./mem.dump", reg_dmp="./reg.dump"):
+
+		self.reg_dump_file_name = reg_dmp
+
+		self.mem_dump_file_name = mem_dmp
+		
+		print(f" PC status = {self.PC}")
+
+		print(f" Memory dump stored under {self.mem_dump_file_name}")
+
+		print(f" Register dump stored under {self.reg_dump_file_name}")
+
+		self.memory_dump()
+
+		self.register_dump()
+
+	def register_dump(self):
+		with open(self.reg_dump_file_name, "w") as reg_file:
+			for addr in range(len(self.REG_FILE)):
+				reg_file.writelines(f"{hex(addr)} | {hex(self.REG_FILE[addr])}\n")
+
+	def memory_dump(self):
+		with open(self.mem_dump_file_name, "w") as mem_file:
+			for addr in range(len(self.memory)):
+				mem_file.writelines(f"{hex(addr)} | {hex(self.memory[addr])}\n")
 
 	def st_run(self):
 
 		# single thread pipeline:
 
 		# Fetch
-		instr = self.__fetch
+		instr = self.fetch()
 
 		# Decode
-		exe_stratergy = self.__decode(instr)
+		exe_stratergy = self.decode(instr)()
 
 		# Execute
-		self.__execute(instr, exe_stratergy)
+		self.execute(instr, exe_stratergy)
 
 		# Write back ???
 		# No need to implement a seperate stage for write back in model
 		# Execute stratergies can deal with store instructions. 
 			
-	def __fetch(self) -> uint32:
+	def fetch(self) -> uint32:
 
 		# Get 32 bit data in memory[PC], then PC++
-		return self.address_space[self.__incr_PC]
+		return uint32(self.memory[self.incr_PC()])
 				
 	# TODO: optimize the opcode if-else statements
-	def __decode(self, instr : uint32) -> InstrExeStratergy:
+	def decode(self, instr : uint32) -> InstrExeStratergy:
 
-		opcode1_0 = bm.get_sub_bits_from_instr(instr, 1, 0) 
+		bm = BitManip32()
+
+		opcode1_0, w2 = bm.get_sub_bits_from_instr(instr, 1, 0) 
 
 		if  opcode1_0 != 3:
-			raise ValueError(f" Not a valid RV32I instruction. instr[1:0] = {opcode1_0}")
+			raise ValueError(f" Not a valid RV32I instruction. instr[1:0] = {binary_repr(opcode1_0, 2)}")
 		
 		opcode6_2, w5 = bm.get_sub_bits_from_instr(instr, 6, 2)
 
@@ -131,12 +164,12 @@ class RV32ICORE:
 			return Store_32
 		
 		elif opcode6_2 == 0x03:
-			return Fence_32			
+			return Fence_32
 
 		else:
 			raise ValueError(f" Not a valid RV32I instruction. instr[6:2] = {opcode6_2}")
 
-	def __execute(self, instr: uint32, exe_stratergy: InstrExeStratergy):
+	def execute(self, instr: uint32, exe_stratergy: InstrExeStratergy):
 
 		# Run exe stratergy
 		self = exe_stratergy.exe_instr(instr, self)
@@ -144,6 +177,8 @@ class RV32ICORE:
 
 class ConditionalBranch_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
+
+		bm = BitManip32()
 
 		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 
@@ -158,10 +193,10 @@ class ConditionalBranch_32(InstrExeStratergy):
 		src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 
 		if core_state.REG_FILE[src1] == core_state.REG_FILE[src2] and funct3 == 0:
-			core_state.__incr_PC(offset)
+			core_state.incr_PC(offset)
 
 		elif core_state.REG_FILE[src1] != core_state.REG_FILE[src2] and funct3 == 1:
-			core_state.__incr_PC(offset)
+			core_state.incr_PC(offset)
 
 		elif funct3 == 4 or funct3 == 6:
 			if core_state.REG_FILE[src1] < core_state.REG_FILE[src2]:
@@ -179,6 +214,8 @@ class ConditionalBranch_32(InstrExeStratergy):
 
 class JumpAndLinkRegsiter_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
+
+		bm = BitManip32()
 		
 		offset, w12 = bm.get_sub_bits_from_instr(instr, 31, 20)
 
@@ -196,6 +233,8 @@ class JumpAndLinkRegsiter_32(InstrExeStratergy):
 class JumpAndLink_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 
+		bm = BitManip32()
+
 		offset, w20 = bm.get_sub_bits_from_instr([
 			bm.get_sub_bits_from_instr(instr, 31), 
 			bm.get_sub_bits_from_instr(instr, 19, 12), 
@@ -208,13 +247,15 @@ class JumpAndLink_32(InstrExeStratergy):
 
 		core_state.REG_FILE[dst] = core_state.PC + 4
 
-		core_state.__incr_PC(offset)
+		core_state.incr_PC(offset)
 	
 		return core_state
 
 
 class LoadUpperImm_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
+
+		bm = BitManip32()
 
 		u_imm, w32 = bm.concat_bits([bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)])
 
@@ -228,6 +269,8 @@ class LoadUpperImm_32(InstrExeStratergy):
 class AddUpperImmPC_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 
+		bm = BitManip32()
+
 		u_imm, w32 = bm.concat_bits([bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)])
 
 		dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
@@ -240,6 +283,8 @@ class AddUpperImmPC_32(InstrExeStratergy):
 #TODO: See if you can optimize the if else statements
 class RegImmInt_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
+		
+		bm = BitManip32()
 		
 		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 
@@ -317,6 +362,8 @@ class RegImmInt_32(InstrExeStratergy):
 
 class RegRegInt_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
+
+		bm = BitManip32()
 
 		src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 
@@ -403,6 +450,8 @@ class RegRegInt_32(InstrExeStratergy):
 class Load_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 
+		bm = BitManip32()
+
 		imm, w12 = bm.get_sub_bits_from_instr(instr, 31, 20)
 
 		src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
@@ -434,6 +483,8 @@ class Load_32(InstrExeStratergy):
 class Store_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 	
+		bm = BitManip32()
+
 		imm, w12 = bm.concat_bits([
 			bm.get_sub_bits_from_instr(instr, 31, 25),
 			bm.get_sub_bits_from_instr(instr, 14, 12)
@@ -471,6 +522,9 @@ class Store_32(InstrExeStratergy):
 
 class Fence_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
+
+		bm = BitManip32()
+
 		#TODO: finish this routine
 		return core_state	
 
@@ -480,3 +534,21 @@ class Hex:
 		self.value = hex(value)
 
 
+if __name__ == "__main__":
+
+	core = RV32ICORE()
+	bm = BitManip32()
+	instr = bm.hex_str_2_unsigned_int("00208663")
+
+	offset, width_offset = bm.concat_bits([
+		bm.get_sub_bits_from_instr(instr, 31, 31),
+		bm.get_sub_bits_from_instr(instr, 8, 8),
+		bm.get_sub_bits_from_instr(instr, 30, 25), 
+		bm.get_sub_bits_from_instr(instr, 11, 8)
+	])
+
+	print(offset)
+	core.core_dump("input_mem.dump", "input_reg.dump")
+	core.memory[0] = instr
+	core.st_run()
+	core.core_dump("output_mem.dump", "output_reg.dump")
