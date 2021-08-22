@@ -116,8 +116,7 @@ class RV32ICORE:
 			return LoadUpperImm_32
 		
 		elif opcode6_2 == 0x05:
-			#TODO: add AUIPC instruction 
-			pass
+			return AddUpperImmPC_32
 		
 		elif opcode6_2 == 0x04:
 			return RegImmInt_32
@@ -222,19 +221,27 @@ class LoadUpperImm_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 		# elif bm.opcode == "0110111" or bm.opcode == "0010111":
 
-		opcode, w7 = bm.get_sub_bits_from_instr(instr, 6, 0)
+		u_imm, w32 = bm.concat_bits([bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)])
+
+		dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
+
+		core_state.REG_FILE[dst] = u_imm
+		
+		return core_state
+		
+
+class AddUpperImmPC_32(InstrExeStratergy):
+	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
+		# elif bm.opcode == "0110111" or bm.opcode == "0010111":
 
 		u_imm, w32 = bm.concat_bits([bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)])
 
 		dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
-		if opcode == "0110111":
-			core_state.REG_FILE[dst] = u_imm
-		else: 
-			core_state.__incr_PC(u_imm)
+		core_state.REG_FILE[dst] = u_imm + core_state.PC
 		
 		return core_state
-		
+
 
 #TODO: See if you can optimize the if else statements
 class RegImmInt_32(InstrExeStratergy):
