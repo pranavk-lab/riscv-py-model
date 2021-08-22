@@ -2,6 +2,7 @@
 import sys
 sys.path.append('../')
 from bit_manipulation import BitManip32 
+from cpu import RV32ICORE
 from numpy import binary_repr, issubdtype, uint32, int32
 import unittest
 import coverage
@@ -132,8 +133,47 @@ class TestBitManip32(unittest.TestCase):
 
 class TestCPU(unittest.TestCase):
 
-    def test_conditional_branch_equals(self):
-        instr = "00208663"
+    def test_conditional_branch_equals_true(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("00208663")
+
+        # Initialize core registers
+        core.REG_FILE[1] = 5
+        core.REG_FILE[2] = 5
+
+        # PC offset
+        offset = 6
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, offset)
+
+    def test_conditional_branch_equals_false(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("00208663")
+
+        # Initialize core registers
+        core.REG_FILE[1] = 5
+        core.REG_FILE[2] = 6
+
+        # PC offset
+        offset = 6
+
+        # Initialize memory with instruction
+        core.memory[0] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, 4)
 
 
 unittest.main()
