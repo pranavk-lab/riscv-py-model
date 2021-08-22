@@ -145,8 +145,6 @@ class RV32ICORE:
 class ConditionalBranch_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
 
-		opcode, w7 = bm.get_sub_bits_from_instr(instr, 6, 0)
-
 		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 
 		offset, width_offset = bm.concat_bits([
@@ -197,7 +195,6 @@ class JumpAndLinkRegsiter_32(InstrExeStratergy):
 
 class JumpAndLink_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
-		# elif bm.opcode == "1101111":
 
 		offset, w20 = bm.get_sub_bits_from_instr([
 			bm.get_sub_bits_from_instr(instr, 31), 
@@ -218,7 +215,6 @@ class JumpAndLink_32(InstrExeStratergy):
 
 class LoadUpperImm_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
-		# elif bm.opcode == "0110111" or bm.opcode == "0010111":
 
 		u_imm, w32 = bm.concat_bits([bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)])
 
@@ -231,7 +227,6 @@ class LoadUpperImm_32(InstrExeStratergy):
 
 class AddUpperImmPC_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
-		# elif bm.opcode == "0110111" or bm.opcode == "0010111":
 
 		u_imm, w32 = bm.concat_bits([bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)])
 
@@ -245,7 +240,6 @@ class AddUpperImmPC_32(InstrExeStratergy):
 #TODO: See if you can optimize the if else statements
 class RegImmInt_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
-		# elif bm.opcode == "0010011":
 		
 		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 
@@ -323,7 +317,6 @@ class RegImmInt_32(InstrExeStratergy):
 
 class RegRegInt_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
-		# elif bm.opcode == "0110011":
 
 		src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 
