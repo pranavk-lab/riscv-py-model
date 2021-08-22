@@ -93,9 +93,50 @@ class RV32ICORE:
 		# Get 32 bit data in memory[PC], then PC++
 		return self.address_space[self.__incr_PC]
 				
+	# TODO: optimize the opcode if-else statements
 	def __decode(self, instr : uint32) -> InstrExeStratergy:
-		#TODO: finish this function
-		pass
+
+		opcode1_0 = bm.get_sub_bits_from_instr(instr, 1, 0) 
+
+		if  opcode1_0 != 3:
+			raise ValueError(f" Not a valid RV32I instruction. instr[1:0] = {opcode1_0}")
+		
+		opcode6_2, w5 = bm.get_sub_bits_from_instr(instr, 6, 2)
+
+		if opcode6_2 == 0x18:
+			return ConditionalBranch_32
+		
+		elif opcode6_2 == 0x19:
+			return JumpAndLinkRegsiter_32
+		
+		elif opcode6_2 == 0x1b:
+			return JumpAndLink_32
+		
+		elif opcode6_2 == 0x0d:
+			return LoadUpperImm_32
+		
+		elif opcode6_2 == 0x05:
+			#TODO: add AUIPC instruction 
+			pass
+		
+		elif opcode6_2 == 0x04:
+			return RegImmInt_32
+
+		elif opcode6_2 == 0x0C:
+			return RegRegInt_32
+
+		elif opcode6_2 == 0x00:
+			return Load_32
+		
+		elif opcode6_2 == 0x08:
+			return Store_32
+		
+		elif opcode6_2 == 0x03:
+			#TODO: add fence instruction
+			pass
+
+		else:
+			raise ValueError(f" Not a valid RV32I instruction. instr[6:2] = {opcode6_2}")
 
 	def __execute(self, instr: uint32, exe_stratergy: InstrExeStratergy):
 
