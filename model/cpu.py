@@ -19,35 +19,35 @@ class InstrExeStratergy(ABC):
 		pass
 			
 
-class Memory32:
-		#TODO: finish this write-up...
-	""" This class is used to model 32-bit addressable memory. It has 
-		access to bit manipulation routines via variable "bm". A memory modelA size is specified
-		when instantiated. There are 
-		three main functions, update_mem_32, update_mem_16, update_mem_8
-		provide write functionality on a """	
-	def __init__(self, size):
-		self.size = size
-		self.bm = bm()
-		self.address_space = self.size*[0]
-		self.memory_dump = "mem.dump"
+# class Memory32:
+# 		#TODO: finish this write-up...
+# 	""" This class is used to model 32-bit addressable memory. It has 
+# 		access to bit manipulation routines via variable "bm". A memory modelA size is specified
+# 		when instantiated. There are 
+# 		three main functions, update_mem_32, update_mem_16, update_mem_8
+# 		provide write functionality on a """	
+# 	def __init__(self, size):
+# 		self.size = size
+# 		self.bm = bm()
+# 		self.address_space = self.size*[0]
+# 		self.memory_dump = "mem.dump"
 
-	def __update_dump(self):
-		with open(self.memory_dump, "w") as file_:
-			file_.write(self.address_space)
+# 	def __update_dump(self):
+# 		with open(self.memory_dump, "w") as file_:
+# 			file_.write(self.address_space)
 
-	#TODO: Finish memory manipulation routines
-	def update_mem_32(self, address, data):
-		pass
+# 	#TODO: Finish memory manipulation routines
+# 	def update_mem_32(self, address, data):
+# 		pass
 
-	def update_mem_16(self, address, data):
-		pass
+# 	def update_mem_16(self, address, data):
+# 		pass
 
-	def update_mem_8(self, address, data):	
-		if len(data) != 32:
-			raise ValueError("data passed is not 32 bits")
-		else:
-			pass
+# 	def update_mem_8(self, address, data):	
+# 		if len(data) != 32:
+# 			raise ValueError("data passed is not 32 bits")
+# 		else:
+# 			pass
 
 
 class RV32ICORE:
@@ -57,8 +57,8 @@ class RV32ICORE:
 	REG_FILE: List[uint32] = [uint32(0)] * 32
 	xlen: int = 32
 
-	def __init__(self, memory: Memory32):
-		self.memory = memory
+	def __init__(self, mem_size: int = 1024):
+		self.memory = [uint32(0)] * mem_size
 
 	def __incr_PC(self, factor: int=0x4):
 		# Store a temporary PC
