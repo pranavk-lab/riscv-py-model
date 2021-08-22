@@ -191,25 +191,40 @@ class ConditionalBranch_32(InstrExeStratergy):
 		src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 		src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 
+		src1_val = int32(core_state.REG_FILE[src1])
+		src2_val = int32(core_state.REG_FILE[src2])
+
 		if funct3 == 0:
-			if core_state.REG_FILE[src1] == core_state.REG_FILE[src2]:
+			if src1_val == src2_val:
 				core_state.incr_PC(offset)
 			else:
 				core_state.incr_PC()
 
 		elif funct3 == 1:
-			if core_state.REG_FILE[src1] != core_state.REG_FILE[src2]:
+			if src1_val != src2_val:
 				core_state.incr_PC(offset)
 			else:
 				core_state.incr_PC()
 
-		elif funct3 == 4 or funct3 == 6:
-			if core_state.REG_FILE[src1] < core_state.REG_FILE[src2]:
+		elif funct3 == 4:
+			if src1_val < src2_val:
 				core_state.incr_PC(offset)
 			else:
 				core_state.incr_PC()
 		
-		elif funct3 == 5 or funct3 == 7:
+		elif funct3 == 5:
+			if src1_val > src2_val:
+				core_state.incr_PC(offset)
+			else:
+				core_state.incr_PC()
+			
+		elif funct3 == 6:
+			if core_state.REG_FILE[src1] < core_state.REG_FILE[src2]:
+				core_state.incr_PC(offset)
+			else:
+				core_state.incr_PC()
+
+		elif funct3 == 7:
 			if core_state.REG_FILE[src1] > core_state.REG_FILE[src2]:
 				core_state.incr_PC(offset)
 			else:
@@ -557,7 +572,7 @@ if __name__ == "__main__":
 
 	core = RV32ICORE()
 	bm = BitManip32()
-	instr = bm.hex_str_2_unsigned_int("00208663")
+	instr = bm.hex_str_2_unsigned_int("00054c63")
 
 	offset, width_offset = bm.concat_bits([
 		bm.get_sub_bits_from_instr(instr, 31, 31),
