@@ -393,7 +393,38 @@ class Load_32(InstrExeStratergy):
 
 class Store_32(InstrExeStratergy):
 	def exe_instr(self, instr: uint32, core_state: RV32ICORE) -> RV32ICORE:
-		# elif bm.opcode == "0100011":
+	
+		imm, w12 = bm.concat_bits([
+			bm.get_sub_bits_from_instr(instr, 31, 25),
+			bm.get_sub_bits_from_instr(instr, 14, 12)
+		]) 
+
+		src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+
+		src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
+
+		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
+
+		mem_addr = core_state.REG_FILE[src1] + bm.sign_extend_nbit_2_int32((imm, w12))
+
+		# byte store
+		if funct3 == 0:
+			upper = 7
+		
+		# 2 byte store
+		elif funct3 == 1:
+			upper = 15
+		
+		# 32 bit store
+		elif funct3 == 2:
+			upper = 32
+				
+		else:
+			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 2. Actual funct3 = {funct3}")
+		
+		src2_tpl = bm.get_sub_bits_from_instr(core_state.REG_FILE[src2], upper, 0)
+
+		core_state.memory[mem_addr] = bm.sign_extend_nbit_2_uint32(src2_tpl)
 	
 		return core_state
 
