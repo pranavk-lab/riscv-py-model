@@ -331,55 +331,57 @@ class RegImmInt_32(InstrExeStratergy):
 
 		dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
+		src_val = uint32(core_state.REG_FILE[src])
+
 		result = 0
 
 		# ADDI
 		if funct3 == 0:
-			result = int32(core_state.REG_FILE[src]) + signed_imm_arith
+			result = int32(src_val) + signed_imm_arith
 			
 		# SLLI
 		elif funct3 == 1:	
-			result = left_shift(core_state.REG_FILE[src], shamt)
+			result = left_shift(src_val, shamt)
 		
 		# SLTI
 		elif funct3 == 2:
-			if core_state.REG_FILE[src] < signed_imm_arith:
+			if int32(src_val) < signed_imm_arith:
 				result = 1
 			else:
 				result = 0
 
 		# SLTIU
 		elif funct3 == 3:
-			if core_state.REG_FILE[src] < unsigned_imm_arith:
-				result = 1
+			if src_val < unsigned_imm_arith:
+				result = 1 
 			else:
 				result = 0
 		
 		# XORI
 		elif funct3 == 4:
-			result = bitwise_xor(core_state.REG_FILE[src], unsigned_imm_arith)
+			result = bitwise_xor(src_val, unsigned_imm_arith)
 
 		# SRL | SRA
 		elif funct3 == 5:
 
 			# SRA
 			if imm_shift_v == 32:
-				result = right_shift(int32(core_state.REG_FILE[src]), shamt)
+				result = right_shift(int32(src_val), shamt)
 			
 			# SRL
 			elif imm_shift_v == 0:
-				result = right_shift(core_state.REG_FILE[src], shamt)
+				result = right_shift(src_val, shamt)
 			
 			else:
 				raise ValueError(f" immediate[11:5] needs to be either 32 or 0. Actual imm = {imm_shift_v}")
 		
 		# OR
 		elif funct3 == 6:
-			result = bitwise_or(core_state.REG_FILE[src], unsigned_imm_arith)
+			result = bitwise_or(src_val, unsigned_imm_arith)
 		
 		# AND
 		elif funct3 == 7:
-			result = bitwise_and(core_state.REG_FILE[src], unsigned_imm_arith)
+			result = bitwise_and(src_val, unsigned_imm_arith)
 		
 		core_state.REG_FILE[dest] = uint32(result)
 
@@ -569,17 +571,22 @@ if __name__ == "__main__":
 
 	core = RV32ICORE()
 	bm = BitManip32()
-	instr = bm.hex_str_2_unsigned_int("00108713")
+	instr = bm.hex_str_2_unsigned_int("0070b713")
 	print(f"instruction = {binary_repr(instr, 32)}")
 
 	imm_arith_v = bm.get_sub_bits_from_instr(instr, 31, 20)
 	signed_imm_arith = bm.sign_extend_nbit_2_int32(imm_arith_v)
+	shamt = bm.get_sub_bits_from_instr(instr, 24, 20)
+
 
 	src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+
+	core.REG_FILE[src] = -5
 
 	dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
 	print(f"imm = {signed_imm_arith}")
+	print(f"shamt = {shamt}")
 
 	# print(f"offset = {offset}")
 	# print(f"src1 = {src1}")
