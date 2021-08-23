@@ -317,7 +317,7 @@ class RegImmInt_32(InstrExeStratergy):
 		
 		funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 
-		imm_arith_v, w12 = bm.get_sub_bits_from_instr(instr, 31, 20)
+		imm_arith_v = bm.get_sub_bits_from_instr(instr, 31, 20)
 
 		imm_shift_v, w7 = bm.get_sub_bits_from_instr(instr, 31, 25)
 
@@ -569,23 +569,24 @@ if __name__ == "__main__":
 
 	core = RV32ICORE()
 	bm = BitManip32()
-	instr = bm.hex_str_2_unsigned_int("000302e7")
+	instr = bm.hex_str_2_unsigned_int("00108713")
 	print(f"instruction = {binary_repr(instr, 32)}")
 
-	offset = bm.sign_extend_nbit_2_int32(
-		bm.get_sub_bits_from_instr(instr, 31, 20)
-	)
+	imm_arith_v = bm.get_sub_bits_from_instr(instr, 31, 20)
+	signed_imm_arith = bm.sign_extend_nbit_2_int32(imm_arith_v)
+
 	src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
-	dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
-	funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
-	src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
-	src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
-	print(f"offset = {offset}")
+
+	dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
+
+	print(f"imm = {signed_imm_arith}")
+
+	# print(f"offset = {offset}")
 	# print(f"src1 = {src1}")
 	# print(f"src2 = {src2}")
 	# print(f"funct3 = {funct3}")
 	print(f"src = {src}")
-	print(f"dest = {dst}")
+	print(f"dest = {dest}")
 	core.core_dump("input_mem.dump", "input_reg.dump")
 	core.memory[0] = instr
 	core.st_run()
