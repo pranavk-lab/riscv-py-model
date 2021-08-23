@@ -401,4 +401,32 @@ class TestCPU(unittest.TestCase):
 
         self.assertRaises(ValueError, core.decode, instr)
 
+    def test_jump_and_link(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0100026f")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # PC offset
+        offset = PC_test + 8
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, offset)
+
+        self.assertEqual(core.REG_FILE[4], PC_test + 0x4) 
+
+
+
+
+
 unittest.main()
