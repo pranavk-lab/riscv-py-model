@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from logging import setLogRecordFactory
 import sys
 sys.path.append('../')
 from bit_manipulation import BitManip32 
@@ -505,5 +506,66 @@ class TestCPU(unittest.TestCase):
 
         self.assertEqual(core.REG_FILE[dst], u_imm) 
 
+    def test_reg_imm_add_positive(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("00108713")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src_val = 5
+        core.REG_FILE[1] = src_val
+
+        # upper immediate. pre-calculated
+        imm =  1
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(int32(core.REG_FILE[dst]), imm + src_val) 
+
+    def test_reg_imm_add_negetive(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("00108713")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src_val = -5
+        core.REG_FILE[1] = src_val
+
+        # upper immediate. pre-calculated
+        imm =  1
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(int32(core.REG_FILE[dst]), imm + src_val) 
 
 unittest.main()
