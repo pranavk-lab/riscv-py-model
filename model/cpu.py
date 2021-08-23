@@ -256,12 +256,12 @@ class JumpAndLink_32(InstrExeStratergy):
 
 		bm = BitManip32()
 
-		offset, w20 = bm.concat_bits([
+		offset = bm.sign_extend_nbit_2_int32(bm.concat_bits([
 			bm.get_sub_bits_from_instr(instr, 31, 31), 
 			bm.get_sub_bits_from_instr(instr, 19, 12), 
 			bm.get_sub_bits_from_instr(instr, 20, 20), 
 			bm.get_sub_bits_from_instr(instr, 30, 21) 
-		]) 
+		])) 
 
 		dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
@@ -562,7 +562,7 @@ if __name__ == "__main__":
 
 	core = RV32ICORE()
 	bm = BitManip32()
-	instr = bm.hex_str_2_unsigned_int("0100026f")
+	instr = bm.hex_str_2_unsigned_int("000302e7")
 	print(f"instruction = {binary_repr(instr, 32)}")
 
 	offset, w20 = bm.concat_bits([
