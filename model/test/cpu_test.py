@@ -385,5 +385,20 @@ class TestCPU(unittest.TestCase):
 
         self.assertEqual(core.PC, 4)
 
+    def test_unknown_opcode1_0_value_error(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020f662")
+
+        self.assertRaises(ValueError, core.decode, instr)
+
+    def test_unknown_opcode6_2_value_error(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020f607")
+
+        self.assertRaises(ValueError, core.decode, instr)
 
 unittest.main()
