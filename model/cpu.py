@@ -253,7 +253,7 @@ class JumpAndLinkRegsiter_32(InstrExeStratergy):
 
 		# Set the least significant bit of result to 0. 
 		# Don't ask me why? It's in the RISCV specification. 
-		core_state.PC = left_shift(bm.get_sub_bits_from_instr(result, 31, 1)[0], 1)
+		core_state.PC = bitwise_and(result, 0xfffffffe)
 	
 		return core_state
 			
