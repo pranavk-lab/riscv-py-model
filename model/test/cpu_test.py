@@ -3,7 +3,7 @@ from logging import setLogRecordFactory
 import sys
 sys.path.append('../')
 from bit_manipulation import BitManip32 
-from cpu import RV32ICORE
+from cpu import RV32ICORE, RegImmInt_32
 from numpy import binary_repr, isfinite, issubdtype, uint32, int32, iinfo
 import unittest
 import coverage
@@ -567,5 +567,107 @@ class TestCPU(unittest.TestCase):
         self.assertEqual(core.PC, PC_test + 0x4)
 
         self.assertEqual(int32(core.REG_FILE[dst]), imm + src_val) 
+
+    def test_reg_imm_shift_left(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("00709713")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src_val = uint32(iinfo(uint32).max)
+        core.REG_FILE[1] = src_val
+
+        # upper immediate. pre-calculated
+        imm =  1
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0xffffff80) 
+
+    def test_reg_imm_shift_right_logic(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0070d713")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src_val = uint32(iinfo(uint32).max)
+        core.REG_FILE[1] = src_val
+
+        # upper immediate. pre-calculated
+        imm =  1
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0x01ffffff) 
+
+    def test_reg_imm_shift_right_arith(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("4070d713")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src_val = 0xf0ffffff
+        core.REG_FILE[1] = src_val
+
+        # upper immediate. pre-calculated
+        imm =  1
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0xffe1ffff) 
+
+    def test_shift_imm11_5_exception(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        exe_strat = RegImmInt_32()
+        instr = bm.hex_str_2_unsigned_int("5070d713")
+
+        self.assertRaises(ValueError, core.execute, instr, exe_strat)
 
 unittest.main()
