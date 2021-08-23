@@ -451,6 +451,34 @@ class TestCPU(unittest.TestCase):
 
         self.assertEqual(core.REG_FILE[5], PC_test + 0x4) 
 
+    def test_load_upper_imm(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("800002b7")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # upper immediate. pre-calculated
+        u_imm = 2147483648
+
+        # destination register
+        dst = 5
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], u_imm) 
+
+        
 
 
 unittest.main()
