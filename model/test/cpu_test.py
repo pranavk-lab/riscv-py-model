@@ -3,7 +3,7 @@ from logging import setLogRecordFactory
 import sys
 sys.path.append('../')
 from bit_manipulation import BitManip32 
-from cpu import RV32ICORE, RegImmInt_32
+from cpu import RV32ICORE, RegImmInt_32, RegRegInt_32
 from numpy import binary_repr, isfinite, issubdtype, uint32, int32, iinfo
 import unittest
 import coverage
@@ -865,6 +865,451 @@ class TestCPU(unittest.TestCase):
 
         # upper immediate. pre-calculated
         imm =  1
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0xffffff0b) 
+
+    def test_reg_reg_add_positive(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("00208733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = 5
+        core.REG_FILE[1] = src1_val
+
+        src2_val = 4
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(int32(core.REG_FILE[dst]), src1_val + src2_val) 
+
+    def test_reg_reg_add_negetive(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("00208733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = -5
+        core.REG_FILE[1] = src1_val
+
+        src2_val = -4
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(int32(core.REG_FILE[dst]), -9) 
+
+    def test_reg_reg_sub_positive(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("40208733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = 5
+        core.REG_FILE[1] = src1_val
+
+        src2_val = 4
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(int32(core.REG_FILE[dst]), src1_val - src2_val) 
+
+    def test_reg_reg_add_negetive(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("40208733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = -5
+        core.REG_FILE[1] = src1_val
+
+        src2_val = -4
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(int32(core.REG_FILE[dst]), -1) 
+
+    def test_shift_funct7_exception_reg_reg_int(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        exe_strat = RegRegInt_32()
+        instr = bm.hex_str_2_unsigned_int("50208733")
+
+        self.assertRaises(ValueError, core.execute, instr, exe_strat)
+
+    def test_reg_reg_shift_left(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("00209733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = 1
+        core.REG_FILE[1] = src1_val
+
+        src2_val = 4
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0x10) 
+
+    def test_reg_reg_shift_right_logic(self):
+
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020d733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = uint32(iinfo(uint32).max)
+        core.REG_FILE[1] = src1_val
+
+        src2_val = 4
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0x0fffffff) 
+
+    def test_reg_reg_shift_right_arith(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("4020d733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = 0xf0ffffff
+        core.REG_FILE[1] = src1_val
+
+        src2_val = 7
+        core.REG_FILE[2] = src2_val
+        # Set up src register
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0xffe1ffff) 
+
+    def test_shift_imm11_5_exception_reg_reg_int(self):
+
+        core = RV32ICORE() 
+        bm = BitManip32()
+        exe_strat = RegRegInt_32()
+        instr = bm.hex_str_2_unsigned_int("5070d733")
+
+        self.assertRaises(ValueError, core.execute, instr, exe_strat)
+
+    def test_reg_reg_slti_true(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020a733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = -5
+        core.REG_FILE[1] = src1_val
+
+        src2_val = 7
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0x1) 
+
+    def test_reg_reg_slti_false(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020a733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = 7
+        core.REG_FILE[1] = src1_val
+
+        src2_val = -5
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0x0) 
+
+    def test_reg_reg_sltiu_true(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020b733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = 7
+        core.REG_FILE[1] = src1_val
+
+        src2_val = -5
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0x1) 
+
+    def test_reg_reg_sltiu_false(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0070b733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = -5
+        core.REG_FILE[1] = src1_val
+
+        src2_val = 7
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0x0) 
+
+    def test_reg_reg_xor(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020c733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = -5
+        core.REG_FILE[1] = src1_val
+
+        src2_val = -241
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0xf4) 
+
+    def test_reg_reg_or(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020e733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = -5
+        core.REG_FILE[1] = src1_val
+
+        src2_val = -241
+        core.REG_FILE[2] = src2_val
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0xffffffff) 
+
+    def test_reg_reg_and(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("0020f733")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src1_val = -5
+        core.REG_FILE[1] = src1_val
+
+        src2_val = -241
+        core.REG_FILE[2] = src2_val
 
         # destination register
         dst = 14
