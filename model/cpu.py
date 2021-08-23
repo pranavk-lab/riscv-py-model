@@ -238,7 +238,9 @@ class JumpAndLinkRegsiter_32(InstrExeStratergy):
 
 		bm = BitManip32()
 		
-		offset, w12 = bm.get_sub_bits_from_instr(instr, 31, 20)
+		offset = bm.sign_extend_nbit_2_int32(
+			bm.get_sub_bits_from_instr(instr, 31, 20)
+		)
 
 		src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 
@@ -246,7 +248,12 @@ class JumpAndLinkRegsiter_32(InstrExeStratergy):
 
 		core_state.REG_FILE[dst] = core_state.PC + 4
 
-		core_state.PC = offset + src
+		# Add offset and content in REG_FILE[src]
+		result = offset + int32(core_state.REG_FILE[src])
+
+		# Set the least significant bit of result to 0. 
+		# Don't ask me why? It's in the RISCV specification. 
+		core_state.PC = left_shift(bm.get_sub_bits_from_instr(result, 31, 1)[0], 1)
 	
 		return core_state
 			
@@ -565,12 +572,10 @@ if __name__ == "__main__":
 	instr = bm.hex_str_2_unsigned_int("000302e7")
 	print(f"instruction = {binary_repr(instr, 32)}")
 
-	offset, w20 = bm.concat_bits([
-		bm.get_sub_bits_from_instr(instr, 31, 31), 
-		bm.get_sub_bits_from_instr(instr, 19, 12), 
-		bm.get_sub_bits_from_instr(instr, 20, 20), 
-		bm.get_sub_bits_from_instr(instr, 30, 21) 
-	]) 
+	offset = bm.sign_extend_nbit_2_int32(
+		bm.get_sub_bits_from_instr(instr, 31, 20)
+	)
+	src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 	dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 	funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 	src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
@@ -579,6 +584,7 @@ if __name__ == "__main__":
 	# print(f"src1 = {src1}")
 	# print(f"src2 = {src2}")
 	# print(f"funct3 = {funct3}")
+	print(f"src = {src}")
 	print(f"dest = {dst}")
 	core.core_dump("input_mem.dump", "input_reg.dump")
 	core.memory[0] = instr
