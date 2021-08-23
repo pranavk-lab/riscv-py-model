@@ -405,9 +405,9 @@ class RegRegInt_32(InstrExeStratergy):
 
 		dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
-		src1_val = core_state.REG_FILE[src1]
+		src1_val = uint32(core_state.REG_FILE[src1])
 
-		src2_val = core_state.REG_FILE[src2]
+		src2_val = uint32(core_state.REG_FILE[src2])
 
 		result = 0
 
@@ -416,18 +416,18 @@ class RegRegInt_32(InstrExeStratergy):
 
 			# ADD
 			if funct7 == 0:
-				result = src1_val + src2_val
+				result = int32(src1_val) + int32(src2_val)
 
 			# SUB
 			elif funct7 == 32:
-				result = src1_val - src2_val
+				result = int32(src1_val) - int32(src2_val)
 
 			else:
 				raise ValueError(f"funct7 needs to be either 32 or 0. Actual funct7 = {funct7}")
 			
 		# SLL
 		elif funct3 == 1:	
-			result = left_shift(src1_val, bm.get_sub_bits_from_instr(src2_val, 4, 0))
+			result = left_shift(src1_val, bm.get_sub_bits_from_instr(src2_val, 4, 0)[0])
 		
 		# SLT
 		elif funct3 == 2:
@@ -452,11 +452,11 @@ class RegRegInt_32(InstrExeStratergy):
 
 			# SRA
 			if funct7 == 32:
-				result = right_shift(int32(src1_val), bm.get_sub_bits_from_instr(src2_val, 4, 0))
+				result = right_shift(int32(src1_val), bm.get_sub_bits_from_instr(src2_val, 4, 0)[0])
 			
 			# SRL
 			elif funct7 == 0:
-				result = right_shift(src1_val, bm.get_sub_bits_from_instr(src2_val, 4, 0))
+				result = right_shift(src1_val, bm.get_sub_bits_from_instr(src2_val, 4, 0)[0])
 			
 			else:
 				raise ValueError(f" funct7 needs to be either 32 or 0. Actual funct7 = {funct7}")
@@ -571,7 +571,7 @@ if __name__ == "__main__":
 
 	core = RV32ICORE()
 	bm = BitManip32()
-	instr = bm.hex_str_2_unsigned_int("0070b713")
+	instr = bm.hex_str_2_unsigned_int("00209733")
 	print(f"instruction = {binary_repr(instr, 32)}")
 
 	imm_arith_v = bm.get_sub_bits_from_instr(instr, 31, 20)
@@ -579,22 +579,29 @@ if __name__ == "__main__":
 	shamt = bm.get_sub_bits_from_instr(instr, 24, 20)
 
 
-	src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+	funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
+	funct7, w7 = bm.get_sub_bits_from_instr(instr, 31, 25)
 
-	core.REG_FILE[src] = -5
+	src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+	src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
+	core.REG_FILE[src1] = -5
+	core.REG_FILE[src2] = -4
 
 	dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
+	print(f"funct3 = {funct3}")
+	print(f"funct7 = {funct7}")
 	print(f"imm = {signed_imm_arith}")
 	print(f"shamt = {shamt}")
 
 	# print(f"offset = {offset}")
-	# print(f"src1 = {src1}")
-	# print(f"src2 = {src2}")
+	print(f"src1 = {src1}")
+	print(f"src2 = {src2}")
 	# print(f"funct3 = {funct3}")
-	print(f"src = {src}")
+	# print(f"src = {src}")
 	print(f"dest = {dest}")
 	core.core_dump("input_mem.dump", "input_reg.dump")
 	core.memory[0] = instr
 	core.st_run()
 	core.core_dump("output_mem.dump", "output_reg.dump")
+	print(f"result = {int32(core.REG_FILE[dest])}")
