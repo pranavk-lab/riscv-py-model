@@ -789,4 +789,95 @@ class TestCPU(unittest.TestCase):
 
         self.assertEqual(core.REG_FILE[dst], 0x0) 
 
+    def test_reg_imm_xor(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("f0f0c713")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src_val = -5
+        core.REG_FILE[1] = src_val
+
+        # upper immediate. pre-calculated
+        imm =  1
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0xf4) 
+
+    def test_reg_imm_or(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("f0f0e713")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src_val = -5
+        core.REG_FILE[1] = src_val
+
+        # upper immediate. pre-calculated
+        imm =  1
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0xffffffff) 
+
+    def test_reg_imm_and(self):
+        core = RV32ICORE()
+        bm = BitManip32()
+        instr = bm.hex_str_2_unsigned_int("f0f0f713")
+
+        PC_test = 0x4 * 20
+
+        # Initialize PC
+        core.PC = PC_test
+
+        # Set up src register
+        src_val = -5
+        core.REG_FILE[1] = src_val
+
+        # upper immediate. pre-calculated
+        imm =  1
+
+        # destination register
+        dst = 14
+
+        # Initialize memory with instruction
+        core.memory[core.PC] = instr
+
+        # Single test run
+        core.st_run()
+
+        self.assertEqual(core.PC, PC_test + 0x4)
+
+        self.assertEqual(core.REG_FILE[dst], 0xffffff0b) 
+
+
 unittest.main()
