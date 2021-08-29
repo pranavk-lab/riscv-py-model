@@ -4,3 +4,6 @@ model/__pycache__/*
 __pycache__/*
 model/test/.coverage
 *.dump
+*.swp
+*.swo
+*.swn
