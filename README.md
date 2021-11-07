@@ -5,12 +5,12 @@ About
 -----------
 
 This repository hosts a python model of RISC-V 32-bit I-instruction. 
-It is intended for research purposes only. 
+It is intended for research purposes only. Not to be used for embedded 
+development or RTL verification. 
 
-Not to be used for embedded development or RTL verification. 
+Use https://github.com/riscv-ovpsim/imperas-riscv-tests.git as formal RISC-V 
+model for software development and HW DV.
 
-Formal RISC-V models for riscv software development and HW DV.
-https://github.com/riscv-ovpsim/imperas-riscv-tests.git 
 
 Quickstart
 ----------------
