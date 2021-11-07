@@ -9,8 +9,7 @@ It is only intended for research purposes.
 
 Not to be used for embedded development or RTL verification. 
 
-Use the following repo for formal RISC-V models used in riscv software 
-development and HW DV.
+Formal RISC-V models for riscv software development and HW DV.
 https://github.com/riscv-ovpsim/imperas-riscv-tests.git 
 
 Quickstart
@@ -19,8 +18,59 @@ Quickstart
     $ git clone https://github.com/pranavk-lab/riscv-py-model.git
     $ cd riscv-py-model
 
-Run Coverage
-----------------
+How to interface with model
+-------------------------------
+
+Use this example to run a riscv test.
+
+    $ cd examples/
+    $ ./add.py
+
+Basic Structure of Test code
+--------------------------------
+
+```python
+from cpu import RV32ICORE
+from bit_manipulation import BitManip32 
+
+# Specify the test hex codes 
+TEST_2_ADD = [
+    "00002097",
+    "e8c08093",
+    "0aa00113",
+    "00209023",
+    "00009703",
+    "0aa00393",
+    "00200193",
+    "44771e63"
+    # "44770e63"
+]
+
+# Create the riscv instance. 
+core = RV32ICORE(8192, "little")
+
+# Create the bit manipulation instance. (Optional)
+bm = BitManip32()
+
+# Copy code in virtual memeory
+addr = 0x0000174
+core.PC = addr
+for x in TEST_2_ADD:
+    core.memory.write_mem_32(addr, bm.hex_str_2_unsigned_int(x))
+    addr+=4
+
+# Get debug statements. 
+core.core_dump("input_mem.dump", "input_reg.dump")
+
+# Run test code
+for x in TEST_2_ADD:
+    core.st_run()
+    core.core_dump("output_mem.dump", "output_reg.dump")
+    # input()
+```
+
+Run unit test with Coverage
+-------------------------------
 
     $ cd model/test/
     $ chmod +x run_coverage
