@@ -4,8 +4,8 @@ riscv-py-model
 About
 -----------
 
-This repository hosts a python model to emulate RISC-V 32-bit I instructions. 
-It is only intended for research purposes. 
+This repository hosts a python model of RISC-V 32-bit I-instruction. 
+It is intended for research purposes only. 
 
 Not to be used for embedded development or RTL verification. 
 
@@ -18,7 +18,7 @@ Quickstart
     $ git clone https://github.com/pranavk-lab/riscv-py-model.git
     $ cd riscv-py-model
 
-How to interface with model
+How to Run Model
 -------------------------------
 
 Use this example to run a riscv test.
@@ -26,7 +26,7 @@ Use this example to run a riscv test.
     $ cd examples/
     $ ./add.py
 
-Basic Structure of Test code
+Basic Structure of Test Code
 --------------------------------
 
 ```python
@@ -68,13 +68,6 @@ for x in TEST_2_ADD:
     core.core_dump("output_mem.dump", "output_reg.dump")
     # input()
 ```
-
-Run unit test with Coverage
--------------------------------
-
-    $ cd model/test/
-    $ chmod +x run_coverage
-    $ ./run_coverage
 
 Future Work
 ----------------
