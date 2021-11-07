@@ -4,11 +4,13 @@ riscv-py-model
 About
 -----------
 
-This repository hosts a python prototype I personally use to understand 
-the inner workings of RISC-V processors. This will not be used for formal 
-HW development verification. 
+This repository hosts a python model to emulate RISC-V 32-bit I instructions. 
+It is only intended for research purposes. 
 
-Furthur research into formal HW verification is required using
+Not to be used for embedded development or RTL verification. 
+
+Use the following repo for formal RISC-V models used in riscv software 
+development and HW DV.
 https://github.com/riscv-ovpsim/imperas-riscv-tests.git 
 
 Quickstart
@@ -27,7 +29,7 @@ Run Coverage
 Future Work
 ----------------
 
-Currently the model only supports 32 bit integer instructions. Future plans to 
+Currently the model only supports 32-bit I instructions. Future plans to 
 add following riscv instructions.
 
 TVM Name | Description
