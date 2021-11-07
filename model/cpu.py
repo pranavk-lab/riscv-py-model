@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-from io import open_code
-
 from numpy.core.numeric import binary_repr, base_repr
-from elf_decode.elf_decode import ELF_DECODE
 from typing import List
 from abc import ABC, abstractmethod
 from bit_manipulation import BitManip32 

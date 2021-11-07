@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-from logging import setLogRecordFactory
 import sys
 sys.path.append('../')
 from bit_manipulation import BitManip32 
 from cpu import RV32ICORE
 from numpy import uint8, uint16, uint32, int32, iinfo
 import unittest
-import coverage
 
 
 class TestCPU(unittest.TestCase):

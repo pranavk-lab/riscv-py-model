@@ -1,7 +1,7 @@
 from numpy import int32, uint, uint32, iinfo
-from numpy import bitwise_and, bitwise_not, bitwise_or, bitwise_xor, invert
+from numpy import bitwise_or
 from numpy import left_shift, right_shift
-from numpy import issubdtype, binary_repr
+from numpy import binary_repr
 from typing import List
 
 class BitManip32:
