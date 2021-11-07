@@ -282,7 +282,7 @@ class TestCPU(unittest.TestCase):
 
         self.init_core() 
         bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020f607")
+        instr = bm.hex_str_2_unsigned_int("0020f6f7")
 
         self.assertRaises(ValueError, self.core.decode, instr)
 
