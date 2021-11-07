@@ -13,6 +13,7 @@ from numpy import left_shift, right_shift, bitwise_and, bitwise_xor, bitwise_or
 class RISCVCORE_TYPE():
 	""" Defines risc-v core type hint """
 
+
 class InstructionTemplate_32(ABC):
 	""" Template for 32-bit instrutions """
 
@@ -24,6 +25,9 @@ class InstructionTemplate_32(ABC):
 	def execute(self):
 		pass
 
+	@abstractmethod
+	def dump_instr(self) -> tuple:
+		return (())
 
 class ConditionalBranch_32(InstructionTemplate_32):
 
@@ -75,6 +79,7 @@ class ConditionalBranch_32(InstructionTemplate_32):
 			7 : self.bgeu 
 		}
 		self.core_state = core_state
+		self.PC_state = self.core_state.PC
 		self.funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 		self.offset, width_offset = bm.concat_bits([
 			bm.get_sub_bits_from_instr(instr, 31, 31),
@@ -82,12 +87,11 @@ class ConditionalBranch_32(InstructionTemplate_32):
 			bm.get_sub_bits_from_instr(instr, 30, 25), 
 			bm.get_sub_bits_from_instr(instr, 11, 8)
 		])
-		self.src1_val = core_state.REG_FILE[
-			bm.get_sub_bits_from_instr(instr, 19, 15)[0]
-		]
-		self.src2_val = core_state.REG_FILE[
-			bm.get_sub_bits_from_instr(instr, 24, 20)[0]
-		]
+		self.src1 = bm.get_sub_bits_from_instr(instr, 19, 15)[0]
+		self.src1_val = core_state.REG_FILE[self.src1]
+
+		self.src2 = bm.get_sub_bits_from_instr(instr, 24, 20)[0] 
+		self.src2_val = core_state.REG_FILE[self.src2]
 	
 	def execute(self):
 
@@ -95,13 +99,25 @@ class ConditionalBranch_32(InstructionTemplate_32):
 			raise ValueError(f" Invalid funct3 = {self.funct3}")
 
 		self.branch_function[self.funct3]()
-
+	
+	def dump_instr(self) -> tuple:
+		return (
+			("instr", "branch instruction"),
+			("funct3", self.funct3),
+			("offset", self.offset),
+			("src1", self.src1),
+			("src1_val", self.src1_val),
+			("src2", self.src2_val)
+		)
+	
 
 class JumpAndLinkRegsiter_32(InstructionTemplate_32):
 
 	def __init__(self, instr: uint32, core_state: RISCVCORE_TYPE):
+
 		bm = BitManip32()
-		
+		self.core_state = core_state
+
 		self.offset = bm.sign_extend_nbit_2_int32(
 			bm.get_sub_bits_from_instr(instr, 31, 20)
 		)
@@ -109,7 +125,10 @@ class JumpAndLinkRegsiter_32(InstructionTemplate_32):
 		self.src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 
 		self.dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
-		self.core_state = core_state
+
+		self.src1_val = core_state.REG_FILE[self.src]
+
+		self.PC_state = self.core_state.PC
 
 	def execute(self):
 		self.core_state.REG_FILE[self.dst] = self.core_state.PC + 4
@@ -120,6 +139,15 @@ class JumpAndLinkRegsiter_32(InstructionTemplate_32):
 		# Set the least significant bit of result to 0. 
 		# Don't ask me why? It's in the RISCV specification. 
 		self.core_state.PC = bitwise_and(result, 0xfffffffe)
+	
+	def dump_instr(self) -> tuple:
+		return (
+			("instr", "JALR instruction"),
+			("offset", self.offset),
+			("src", self.src),
+			("src_val", self.src1_val),
+			("dest", self.dst)
+		)
 
 
 class JumpAndLink_32(InstructionTemplate_32):
@@ -144,13 +172,21 @@ class JumpAndLink_32(InstructionTemplate_32):
 
 		self.core_state.incr_PC(self.offset)
 
+	def dump_instr(self) -> tuple:
+		return (
+			("instr", "JAL instruction"),
+			("offset", self.offset),
+			("dest", self.dst)
+		)
 
 class LoadUpperImm_32(InstructionTemplate_32):
 
 	def __init__(self, instr: uint32, core_state: RISCVCORE_TYPE):
 		bm = BitManip32()
 
-		self.u_imm, w32 = bm.concat_bits([bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)])
+		self.u_imm, w32 = bm.concat_bits(
+			[bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)]
+		)
 
 		self.dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
@@ -160,20 +196,37 @@ class LoadUpperImm_32(InstructionTemplate_32):
 		self.core_state.REG_FILE[self.dst] = self.u_imm
 
 		self.core_state.incr_PC()
-		
+	
+	def dump_instr(self) -> tuple:
+		return (
+			("instr", "LUI instruction"),
+			("imm", self.u_imm),
+			("dst", self.dst),
+		)
 
 class AddUpperImmPC_32(InstructionTemplate_32): 
 
 	def __init__(self, instr: uint32, core_state: RISCVCORE_TYPE):
 		bm = BitManip32()
 
-		self.u_imm, w32 = bm.concat_bits([bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)])
+		self.u_imm, w32 = bm.concat_bits(
+			[bm.get_sub_bits_from_instr(instr, 31, 12), (0, 12)]
+		)
 		self.dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 		self.core_state = core_state
 
 	def execute(self):
 
-		self.core_state.REG_FILE[self.dst] = self.u_imm + self.core_state.incr_PC()
+		self.core_state.REG_FILE[self.dst] = (
+			self.u_imm + self.core_state.incr_PC()
+		)
+
+	def dump_instr(self) -> tuple:
+		return (
+			("instr", "AUI instruction"),
+			("imm", self.u_imm),
+			("dst", self.dst),
+		)
 
 
 class RegImmInt_32(InstructionTemplate_32):
@@ -209,7 +262,8 @@ class RegImmInt_32(InstructionTemplate_32):
 			return right_shift(self.src_val, self.shamt)
 		
 		else:
-			raise ValueError(f" immediate[11:5] needs to be either 32 or 0. Actual imm = {self.imm_shift_v}")
+			raise ValueError(f" immediate[11:5] needs to be either 32 or 0. \
+				Actual imm = {self.imm_shift_v}")
 	
 	def ori(self) -> uint32:
 		return bitwise_or(self.src_val, self.unsigned_imm_arith)
@@ -234,22 +288,44 @@ class RegImmInt_32(InstructionTemplate_32):
 		
 		# Get all the instruction vectors
 		self.funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
-		imm_arith_v = bm.get_sub_bits_from_instr(instr, 31, 20)
+		self.imm_arith_v = bm.get_sub_bits_from_instr(instr, 31, 20)
 		self.imm_shift_v, w7 = bm.get_sub_bits_from_instr(instr, 31, 25)
-		self.unsigned_imm_arith = bm.sign_extend_nbit_2_uint32(imm_arith_v)
-		self.signed_imm_arith = bm.sign_extend_nbit_2_int32(imm_arith_v)
+		self.unsigned_imm_arith = bm.sign_extend_nbit_2_uint32(self.imm_arith_v)
+		self.signed_imm_arith = bm.sign_extend_nbit_2_int32(self.imm_arith_v)
 		self.shamt, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
-		src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+		self.src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 		self.dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
-		self.src_val = uint32(core_state.REG_FILE[src])
+		self.src_val = uint32(core_state.REG_FILE[self.src])
 		self.core_state = core_state
 
 	def execute(self):
 		# Execute instruction based on funct3
-		self.core_state.REG_FILE[self.dest] = uint32(self.int_function[self.funct3]())
+		self.core_state.REG_FILE[self.dest] = (
+			uint32(self.int_function[self.funct3]())
+		)
 
 		self.core_state.incr_PC()
+	
+	def dump_instr(self) -> tuple:
+		if self.funct3 == 1 or self.funct3 == 5:
+			return (
+				("instr", "shift instruction"),
+				("funct3", self.funct3),
+				("src1", self.src),
+				("src1_val", self.src_val),
+				("dest", self.dest),
+				("shift", self.shamt),
+				("imm", self.imm_shift_v)
+			)
 
+		return (
+			("instr", "ADDI/SLT/LOGICAL instruction"),
+			("funct3", self.funct3),
+			("src1", self.src),
+			("src1_val", self.src_val),
+			("dest", self.dest),
+			("imm", self.imm_arith_v)
+		)
 
 class RegRegInt_32(InstructionTemplate_32):
 
@@ -264,7 +340,8 @@ class RegRegInt_32(InstructionTemplate_32):
 			return int32(self.src1_val) - int32(self.src2_val)
 
 		else:
-			raise ValueError(f"funct7 needs to be either 32 or 0. Actual funct7 = {self.funct7}")
+			raise ValueError(f"funct7 needs to be either 32 or 0. \
+				Actual funct7 = {self.funct7}")
 		
 	def sll(self) -> uint32:
 		return left_shift(self.src1_val, self.shift_val)
@@ -293,7 +370,8 @@ class RegRegInt_32(InstructionTemplate_32):
 			return right_shift(self.src1_val, self.shift_val)
 		
 		else:
-			raise ValueError(f" funct7 needs to be either 32 or 0. Actual funct7 = {self.funct7}")
+			raise ValueError(f" funct7 needs to be either 32 or 0. \
+			Actual funct7 = {self.funct7}")
 	
 	def or_(self) -> uint32:
 		return bitwise_or(self.src1_val, self.src2_val)
@@ -315,9 +393,9 @@ class RegRegInt_32(InstructionTemplate_32):
 			7 : self.and_
 		}
 
-		src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
+		self.src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 
-		src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+		self.src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 
 		self.funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 
@@ -325,19 +403,31 @@ class RegRegInt_32(InstructionTemplate_32):
 
 		self.dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
-		self.src1_val = uint32(core_state.REG_FILE[src1])
+		self.src1_val = uint32(core_state.REG_FILE[self.src1])
 
-		self.src2_val = uint32(core_state.REG_FILE[src2])
+		self.src2_val = uint32(core_state.REG_FILE[self.src2])
 
 		self.shift_val, w5 = bm.get_sub_bits_from_instr(self.src2_val, 4, 0)
 
 		self.core_state = core_state
 
 	def execute(self):
-		self.core_state.REG_FILE[self.dest] = uint32(self.int_function[self.funct3]())
-
+		self.core_state.REG_FILE[self.dest] = (
+			uint32(self.int_function[self.funct3]())
+		)
 		self.core_state.incr_PC()
-
+	
+	def dump_instr(self) -> tuple:
+		return (
+			("instr", "Reg Reg int instruction"),
+			("funct3", self.funct3),
+			("funct7", self.funct7),
+			("src1", self.src1),
+			("src1_val", self.src1_val),
+			("src2", self.src2),
+			("src2_val", self.src2_val),
+			("dest", self.dest),
+		)
 
 class Load_32(InstructionTemplate_32):
 
@@ -363,11 +453,13 @@ class Load_32(InstructionTemplate_32):
 		self.core_state = core_state
 
 		imm, w12 = self.bm.get_sub_bits_from_instr(instr, 31, 20)
-		src, w5 = self.bm.get_sub_bits_from_instr(instr, 19, 15)
+		self.src, w5 = self.bm.get_sub_bits_from_instr(instr, 19, 15)
 		self.dest, w5 = self.bm.get_sub_bits_from_instr(instr, 11, 7)
 		self.funct3, w3 = self.bm.get_sub_bits_from_instr(instr, 14, 12)
-		self.mem_addr = core_state.REG_FILE[src] + self.bm.sign_extend_nbit_2_int32((imm, w12))
-
+		self.mem_addr = (
+			core_state.REG_FILE[self.src] + 
+			self.bm.sign_extend_nbit_2_int32((imm, w12))
+		)
 		self.load_function = {
 			0 : self.lb,
 			1 : self.lh,
@@ -378,11 +470,23 @@ class Load_32(InstructionTemplate_32):
 
 	def execute(self):
 		if self.funct3 not in self.load_function.keys():
-			raise ValueError(f" Invalid funct3. Must be {self.load_function.keys()}. Actual funct3 = {self.funct3}")
+			raise ValueError(f" Invalid funct3. \
+				Must be {self.load_function.keys()}.\
+					Actual funct3 = {self.funct3}")
 
-		self.core_state.REG_FILE[self.dest] = uint32(self.load_function[self.funct3]())
-
+		self.core_state.REG_FILE[self.dest] = (
+			uint32(self.load_function[self.funct3]())
+		)
 		self.core_state.incr_PC()
+	
+	def dump_instr(self) -> tuple:
+		return (
+			("instr", "load instruction"),
+			("funct3", self.funct3),
+			("src1", self.src),
+			("mem_addr", self.mem_addr),
+			("dest", self.dest),
+		)
 
 
 class Store_32(InstructionTemplate_32):
@@ -406,15 +510,17 @@ class Store_32(InstructionTemplate_32):
 
 		self.core_state = core_state
 
-		src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+		self.src1, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 
-		src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
+		self.src2, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 
 		self.funct3, w3 = bm.get_sub_bits_from_instr(instr, 14, 12)
 
-		self.src2_val = core_state.REG_FILE[src2]
+		self.src1_val = core_state.REG_FILE[self.src1]
 
-		self.mem_addr = imm + core_state.REG_FILE[src1]
+		self.src2_val = core_state.REG_FILE[self.src2]
+
+		self.mem_addr = imm + self.src1_val
 
 		self.store_function = {
 			0 : self.sb,
@@ -425,13 +531,36 @@ class Store_32(InstructionTemplate_32):
 	def execute(self):
 				
 		if self.funct3 not in self.store_function.keys():
-			raise ValueError(f"funct3 is out of scope. Must be 0 <= funct3 <= 2. Actual funct3 = {self.funct3}")
+			raise ValueError(f"funct3 is out of scope. \
+				Must be 0 <= funct3 <= 2. Actual funct3 = {self.funct3}")
 
 		# Run store instruction
 		self.store_function[self.funct3]()
 		
 		self.core_state.incr_PC()
+	
+	def dump_instr(self) -> tuple:
+		return (
+			("instr", "store instruction"),
+			("funct3", self.funct3),
+			("src1", self.src1),
+			("src1_val", self.src1_val),
+			("src2", self.src2),
+			("src2_val", self.src2_val),
+			("mem_addr", self.mem_addr),
+		)
 
+
+class NOP_32(InstructionTemplate_32):
+
+	def __init__(self, instr: uint32, core_state: RISCVCORE_TYPE):
+		self.PC_state = core_state.PC
+	
+	def execute(self):
+		return super().execute()
+	
+	def dump_instr(self) -> tuple:
+		return super().dump_instr()
 
 class Fence_32(InstructionTemplate_32):
 	def __init__(instr: uint32, core_state: RISCVCORE_TYPE):
@@ -448,6 +577,7 @@ class RV32ICORE():
 	""" RISC-V 32-bit core base class """
 
 	PC: uint32 = uint32(0)
+	old_PC: uint32 = uint32(0)
 	REG_FILE: List[uint32] = [uint32(0)] * 32
 	xlen: int = 32
 	instruction_set: dict = {
@@ -460,46 +590,62 @@ class RV32ICORE():
 		0x0C : RegRegInt_32,
 		0x00 : Load_32,
 		0x08 : Store_32,
-		0x03 : Fence_32
+		0x03 : Fence_32,
+		0x01 : NOP_32
 	}
 
 	def __init__(self, mem_size: int = 1024, endianess: str = "little"):
 		self.memory = Memory_32(mem_size, endianess)
+		self.previous_instruction = NOP_32(0, self)
 
 	def incr_PC(self, factor: int=0x4):
 		# Store a temporary PC
-		PC = self.PC
+		self.old_PC = self.PC
 
 		self.PC+=factor
 		if self.PC >= self.memory.mem_size:
 			self.PC = uint32(0)
 
 		# Return old PC 
-		return PC
+		return self.old_PC
 	
 	def core_dump(self, mem_dmp="./mem.dump", reg_dmp="./reg.dump"):
 
-		print(f" PC status = {self.PC}")
+		print(f" PC status = {hex(self.old_PC)} -> {hex(self.PC)}")
 
-		print(f" Memory dump stored under {mem_dmp}")
+		self.instr_dump()
+
+		# print(f" Memory dump stored under {mem_dmp}")
 		self.memory.mem_dump(mem_dmp)
 
-		print(f" Register dump stored under {reg_dmp}")
+		# print(f" Register dump stored under {reg_dmp}")
 		self.register_dump(reg_dmp)
-
+	
 
 	def register_dump(self, reg_dmp: str):
 		with open(reg_dmp, "w") as reg_file:
 			reg_file.writelines(
-				f"{hex(addr)} | {hex(self.REG_FILE[addr])}\n" for addr in range(32)
+				f"{hex(addr)} | {hex(self.REG_FILE[addr])}\n" 
+					for addr in range(32)
 			)
 
+	def instr_dump(self):
+
+		instr_fields = self.previous_instruction.dump_instr()
+
+		print("==========================================================")
+
+		for x in range(len(instr_fields)):
+			print(f"\t{instr_fields[x][0]}=\t{instr_fields[x][1]}")
+		
+		print("==========================================================\n")
+	
 	def st_run(self):
 
 		# single thread pipeline:
 
 		# Fetch -> Decode -> Execute
-		self.execute(self.decode(self.fetch()))
+		self.previous_instruction = self.execute(self.decode(self.fetch()))
 
 		# Write back ???
 		# No need to implement a seperate stage for write back in model
@@ -516,23 +662,31 @@ class RV32ICORE():
 		opcode6_2, w5 = bm.get_sub_bits_from_instr(instr, 6, 2)
 
 		if  opcode1_0 != 3:
-			raise ValueError(f" Not a valid RV32I instruction. instr[1:0] = {binary_repr(opcode1_0, 2)}")
+			raise ValueError(f" Not a valid RV32I instruction. \
+				instr[1:0] = {binary_repr(opcode1_0, 2)}")
 
 		if opcode6_2 not in self.instruction_set.keys():
-			raise ValueError(f" Not a valid RV32I instruction. instr[6:2] = {opcode6_2}")
+			raise ValueError(f" Not a valid RV32I instruction. \
+				instr[6:2] = {opcode6_2}")
 
 		return self.instruction_set[opcode6_2](instr, self)
 	
-	def execute(self, instruction_stratergy: InstructionTemplate_32):
+	def execute(self, instr: InstructionTemplate_32) -> InstructionTemplate_32:
 
-		if not isinstance(instruction_stratergy, InstructionTemplate_32):
-			raise TypeError(f" Invalid instruction type, must be a InstructionTemplate_32 object")
+		if not isinstance(instr, InstructionTemplate_32):
+			raise TypeError(f" Invalid instruction type, \
+				must be a InstructionTemplate_32 object")
 
-		instruction_stratergy.execute()
+		instr.execute()
+
+		return instr
 
 
 class Memory_32():
-	""" A byte-addressable 32-bit memory model. Provides memory manipulation interface/routines """
+	""" 
+	A byte-addressable 32-bit memory model. 
+	Provides memory manipulation interface/routines 
+	"""
 
 	def __init__(self, mem_size: int = 1024, endianess: str = "little"):
 
@@ -543,7 +697,8 @@ class Memory_32():
 			self.byte_significance = [1, 2, 3, 4]
 
 		else:
-			raise ValueError("Invalid endianess, must be a string matching either 'little' or 'big'")
+			raise ValueError("Invalid endianess, \
+				must be a string matching either 'little' or 'big'")
 		
 		self.endianess = endianess
 		self.mem_size = mem_size
@@ -565,7 +720,9 @@ class Memory_32():
 		data_bytes_tpl = self.get_bytes_from_word(data)
 
 		for x in range(4):
-			self.write_mem_8(addr + self.byte_significance[x] - 1, data_bytes_tpl[x])
+			self.write_mem_8(
+				addr + self.byte_significance[x] - 1, data_bytes_tpl[x]
+			)
 
 	def write_mem_16(self, addr: int, data: uint16):
 
@@ -580,7 +737,9 @@ class Memory_32():
 	def read_mem_32(self, addr: int):
 
 		return BitManip32().concat_bits(
-			[(self.read_mem_8(addr + self.byte_significance[x] -1), 8) for x in range(4)]
+			[(self.read_mem_8(addr + self.byte_significance[x] -1), 8) 
+				for x in range(4)
+			]
 		)[0]
 
 	def read_mem_16(self, addr: int) -> uint16:
