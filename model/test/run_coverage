@@ -11,10 +11,10 @@ echo_run rm -rf htmlcov
 echo_run rm -rf .coverage
 
 echo "Running bit_manipulation tests..."
-coverage run --omit=/home/prankov/.local/lib/python3.8/site-packages/* ./bit_manip_test.py
+coverage run --omit=*/site-packages/* ./bit_manip_test.py
 
 echo "Running RV32ICORE tests..."
-coverage run --omit=/home/prankov/.local/lib/python3.8/site-packages/* ./cpu_test.py
+coverage run --omit=*/site-packages/* ./rv32ui_test.py
 
 echo -e "\nCreating HTML"
 coverage html
