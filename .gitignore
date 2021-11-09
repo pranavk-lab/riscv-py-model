@@ -1,8 +1,7 @@
 .vscode
-model/test/htmlcov/*
-model/__pycache__/*
-__pycache__/*
-model/test/.coverage
+*/htmlcov/*
+*__pycache__*
+*.coverage
 *.dump
 *.swp
 *.swo
