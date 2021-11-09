@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-import sys
-sys.path.append('../')
-from bit_manipulation import BitManip, XLen
-from cpu import RV32ICORE
+from context import RV32ICORE
+from context import BitManip, XLen
 from numpy import uint8, uint16, uint32, int32, iinfo
 import unittest
 

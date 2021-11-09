@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from logging import setLogRecordFactory
-import sys
-sys.path.append('../')
+from context import BitManip, XLen
 from bit_manipulation import BitManip, XLen
 from numpy import binary_repr, isfinite, issubdtype, uint32, int32, iinfo
 import unittest
