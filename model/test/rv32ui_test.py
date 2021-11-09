@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 import sys
 sys.path.append('../')
-from bit_manipulation import BitManip32 
+from bit_manipulation import BitManip, XLen
 from cpu import RV32ICORE
 from numpy import uint8, uint16, uint32, int32, iinfo
 import unittest
 
 
-class TestCPU(unittest.TestCase):
+class TestRV32UI(unittest.TestCase):
+
+    REG_FILE = [uint32(0)] * 32
 
     def init_core(self):
         self.core = RV32ICORE()
@@ -15,12 +17,40 @@ class TestCPU(unittest.TestCase):
     def init_memory(self, addr, data):
         self.core.memory.write_mem_32(addr, data)
 
+    def hex_str_2_unsigned_int(self, hex_str: str) -> uint32:
+        return BitManip(XLen._32BIT).hex_str_2_unsigned_int(hex_str)
+
+    def run_branch_instructions(self, instr):
+
+        # Create rv32i instance
+        self.core = RV32ICORE()
+
+        # Copy register file into core
+        self.core.REG_FILE = self.REG_FILE
+
+        self.init_memory(0, self.hex_str_2_unsigned_int(instr))
+
+        # Single test run
+        self.core.st_run()
+
+    def test_conditional_branch_equals_true(self):
+
+        # Initialize registers
+        self.REG_FILE[1] = -5
+        self.REG_FILE[2] = -5
+
+        # Run test
+        self.run_branch_instructions("00208663")
+
+        # Compare 
+        self.assertEqual(self.core.PC, 6)
+
     def test_conditional_branch_equals_true(self):
 
         self.init_core()
 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00208663")
+        instr = self.hex_str_2_unsigned_int("00208663")
+        
 
         # Initialize self.core registers
         self.core.REG_FILE[1] = -5
@@ -40,8 +70,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_equals_false(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00208663")
+        
+        instr = self.hex_str_2_unsigned_int("00208663")
 
         # Initialize self.core registers
         self.core.REG_FILE[1] = -5
@@ -61,8 +91,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_not_equals_true(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("28301863")
+        
+        instr = self.hex_str_2_unsigned_int("28301863")
 
         # Initialize self.core registers
         self.core.REG_FILE[0] = 0
@@ -82,8 +112,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_not_equals_false(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("28301863")
+        
+        instr = self.hex_str_2_unsigned_int("28301863")
 
         # Initialize self.core registers
         self.core.REG_FILE[0] = 0
@@ -103,8 +133,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_lt_true(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00054c63")
+        
+        instr = self.hex_str_2_unsigned_int("00054c63")
 
         # Initialize self.core registers
         self.core.REG_FILE[10] = -1
@@ -124,8 +154,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_lt_false(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00054c63")
+        
+        instr = self.hex_str_2_unsigned_int("00054c63")
 
         # Initialize self.core registers
         self.core.REG_FILE[10] = 1
@@ -145,8 +175,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_gt_true(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020d663")
+        
+        instr = self.hex_str_2_unsigned_int("0020d663")
 
         # Initialize self.core registers
         self.core.REG_FILE[1] = 1
@@ -166,8 +196,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_gt_false(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020d663")
+        
+        instr = self.hex_str_2_unsigned_int("0020d663")
 
         # Initialize self.core registers
         self.core.REG_FILE[1] = -1
@@ -187,8 +217,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_ltu_true(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020e663")
+        
+        instr = self.hex_str_2_unsigned_int("0020e663")
 
         # Initialize self.core registers
         self.core.REG_FILE[1] = uint32(iinfo(uint32).max)-1
@@ -208,8 +238,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_ltu_false(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020e663")
+        
+        instr = self.hex_str_2_unsigned_int("0020e663")
 
         # Initialize self.core registers
         self.core.REG_FILE[1] = uint32(iinfo(uint32).max)
@@ -229,8 +259,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_geu_true(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020f663")
+        
+        instr = self.hex_str_2_unsigned_int("0020f663")
 
         # Initialize self.core registers
         self.core.REG_FILE[1] = uint32(iinfo(uint32).max)
@@ -250,8 +280,8 @@ class TestCPU(unittest.TestCase):
     def test_conditional_branch_geu_false(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020f663")
+        
+        instr = self.hex_str_2_unsigned_int("0020f663")
 
         # Initialize self.core registers
         self.core.REG_FILE[1] = uint32(iinfo(uint32).max)
@@ -271,24 +301,24 @@ class TestCPU(unittest.TestCase):
     def test_unknown_opcode1_0_value_error(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020f662")
+        
+        instr = self.hex_str_2_unsigned_int("0020f662")
 
         self.assertRaises(ValueError, self.core.decode, instr)
 
     def test_unknown_opcode6_2_value_error(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020f6f7")
+        
+        instr = self.hex_str_2_unsigned_int("0020f6f7")
 
         self.assertRaises(ValueError, self.core.decode, instr)
 
     def test_jump_and_link(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0100026f")
+        
+        instr = self.hex_str_2_unsigned_int("0100026f")
 
         PC_test = 0x4 * 20
 
@@ -311,8 +341,8 @@ class TestCPU(unittest.TestCase):
     def test_jump_and_link_register(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("000302e7")
+        
+        instr = self.hex_str_2_unsigned_int("000302e7")
 
         PC_test = 0x4 * 20
 
@@ -337,8 +367,8 @@ class TestCPU(unittest.TestCase):
     def test_load_upper_imm(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("800002b7")
+        
+        instr = self.hex_str_2_unsigned_int("800002b7")
 
         PC_test = 0x4 * 20
 
@@ -364,8 +394,8 @@ class TestCPU(unittest.TestCase):
     def test_add_upper_imm_2_pc(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00004517")
+        
+        instr = self.hex_str_2_unsigned_int("00004517")
 
         PC_test = 0x4 * 20
 
@@ -391,8 +421,8 @@ class TestCPU(unittest.TestCase):
     def test_reg_imm_add_positive(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00108713")
+        
+        instr = self.hex_str_2_unsigned_int("00108713")
 
         PC_test = 0x4 * 20
 
@@ -422,8 +452,8 @@ class TestCPU(unittest.TestCase):
     def test_reg_imm_add_negetive(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00108713")
+        
+        instr = self.hex_str_2_unsigned_int("00108713")
 
         PC_test = 0x4 * 20
 
@@ -453,8 +483,8 @@ class TestCPU(unittest.TestCase):
     def test_reg_imm_shift_left(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00709713")
+        
+        instr = self.hex_str_2_unsigned_int("00709713")
 
         PC_test = 0x4 * 20
 
@@ -484,8 +514,8 @@ class TestCPU(unittest.TestCase):
     def test_reg_imm_shift_right_logic(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0070d713")
+        
+        instr = self.hex_str_2_unsigned_int("0070d713")
 
         PC_test = 0x4 * 20
 
@@ -514,8 +544,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_imm_shift_right_arith(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("4070d713")
+        
+        instr = self.hex_str_2_unsigned_int("4070d713")
 
         PC_test = 0x4 * 20
 
@@ -545,15 +575,15 @@ class TestCPU(unittest.TestCase):
     def test_shift_imm11_5_exception(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("5070d713")
+        
+        instr = self.hex_str_2_unsigned_int("5070d713")
 
         self.assertRaises(ValueError, self.core.execute, self.core.decode(instr))
 
     def test_reg_imm_slti_true(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0070a713")
+        
+        instr = self.hex_str_2_unsigned_int("0070a713")
 
         PC_test = 0x4 * 20
 
@@ -582,8 +612,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_imm_slti_false(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("8000a713")
+        
+        instr = self.hex_str_2_unsigned_int("8000a713")
 
         PC_test = 0x4 * 20
 
@@ -612,8 +642,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_imm_sltiu_true(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("8000b713")
+        
+        instr = self.hex_str_2_unsigned_int("8000b713")
 
         PC_test = 0x4 * 20
 
@@ -642,8 +672,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_imm_sltiu_false(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0070b713")
+        
+        instr = self.hex_str_2_unsigned_int("0070b713")
 
         PC_test = 0x4 * 20
 
@@ -672,8 +702,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_imm_xor(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("f0f0c713")
+        
+        instr = self.hex_str_2_unsigned_int("f0f0c713")
 
         PC_test = 0x4 * 20
 
@@ -702,8 +732,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_imm_or(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("f0f0e713")
+        
+        instr = self.hex_str_2_unsigned_int("f0f0e713")
 
         PC_test = 0x4 * 20
 
@@ -732,8 +762,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_imm_and(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("f0f0f713")
+        
+        instr = self.hex_str_2_unsigned_int("f0f0f713")
 
         PC_test = 0x4 * 20
 
@@ -763,8 +793,8 @@ class TestCPU(unittest.TestCase):
     def test_reg_reg_add_positive(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00208733")
+        
+        instr = self.hex_str_2_unsigned_int("00208733")
 
         PC_test = 0x4 * 20
 
@@ -794,8 +824,8 @@ class TestCPU(unittest.TestCase):
     def test_reg_reg_add_negetive(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00208733")
+        
+        instr = self.hex_str_2_unsigned_int("00208733")
 
         PC_test = 0x4 * 20
 
@@ -825,8 +855,8 @@ class TestCPU(unittest.TestCase):
     def test_reg_reg_sub_positive(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("40208733")
+        
+        instr = self.hex_str_2_unsigned_int("40208733")
 
         PC_test = 0x4 * 20
 
@@ -856,8 +886,8 @@ class TestCPU(unittest.TestCase):
     def test_reg_reg_add_negetive(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("40208733")
+        
+        instr = self.hex_str_2_unsigned_int("40208733")
 
         PC_test = 0x4 * 20
 
@@ -887,16 +917,16 @@ class TestCPU(unittest.TestCase):
     def test_shift_funct7_exception_reg_reg_int(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("50208733")
+        
+        instr = self.hex_str_2_unsigned_int("50208733")
 
         self.assertRaises(ValueError, self.core.execute, self.core.decode(instr))
 
     def test_reg_reg_shift_left(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("00209733")
+        
+        instr = self.hex_str_2_unsigned_int("00209733")
 
         PC_test = 0x4 * 20
 
@@ -926,8 +956,8 @@ class TestCPU(unittest.TestCase):
     def test_reg_reg_shift_right_logic(self):
 
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020d733")
+        
+        instr = self.hex_str_2_unsigned_int("0020d733")
 
         PC_test = 0x4 * 20
 
@@ -956,8 +986,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_reg_shift_right_arith(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("4020d733")
+        
+        instr = self.hex_str_2_unsigned_int("4020d733")
 
         PC_test = 0x4 * 20
 
@@ -988,15 +1018,15 @@ class TestCPU(unittest.TestCase):
     def test_shift_imm11_5_exception_reg_reg_int(self):
 
         self.init_core() 
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("5070d733")
+        
+        instr = self.hex_str_2_unsigned_int("5070d733")
 
         self.assertRaises(ValueError, self.core.execute, self.core.decode(instr))
 
     def test_reg_reg_slti_true(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020a733")
+        
+        instr = self.hex_str_2_unsigned_int("0020a733")
 
         PC_test = 0x4 * 20
 
@@ -1025,8 +1055,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_reg_slti_false(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020a733")
+        
+        instr = self.hex_str_2_unsigned_int("0020a733")
 
         PC_test = 0x4 * 20
 
@@ -1055,8 +1085,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_reg_sltiu_true(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020b733")
+        
+        instr = self.hex_str_2_unsigned_int("0020b733")
 
         PC_test = 0x4 * 20
 
@@ -1085,8 +1115,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_reg_sltiu_false(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0070b733")
+        
+        instr = self.hex_str_2_unsigned_int("0070b733")
 
         PC_test = 0x4 * 20
 
@@ -1115,8 +1145,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_reg_xor(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020c733")
+        
+        instr = self.hex_str_2_unsigned_int("0020c733")
 
         PC_test = 0x4 * 20
 
@@ -1145,8 +1175,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_reg_or(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020e733")
+        
+        instr = self.hex_str_2_unsigned_int("0020e733")
 
         PC_test = 0x4 * 20
 
@@ -1175,8 +1205,8 @@ class TestCPU(unittest.TestCase):
 
     def test_reg_reg_and(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("0020f733")
+        
+        instr = self.hex_str_2_unsigned_int("0020f733")
 
         PC_test = 0x4 * 20
 
@@ -1205,8 +1235,8 @@ class TestCPU(unittest.TestCase):
 
     def test_load_byte(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("ffd08703")
+        
+        instr = self.hex_str_2_unsigned_int("ffd08703")
 
         # Test values
         src = 1
@@ -1230,8 +1260,8 @@ class TestCPU(unittest.TestCase):
 
     def test_load_16_bits(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("ffa09703")
+        
+        instr = self.hex_str_2_unsigned_int("ffa09703")
 
         # Test values
         src = 1
@@ -1255,8 +1285,8 @@ class TestCPU(unittest.TestCase):
 
     def test_load_word(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("ff40a703")
+        
+        instr = self.hex_str_2_unsigned_int("ff40a703")
 
         # Test values
         src = 1
@@ -1280,8 +1310,8 @@ class TestCPU(unittest.TestCase):
 
     def test_store_byte(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("fe208ea3")
+        
+        instr = self.hex_str_2_unsigned_int("fe208ea3")
 
         # Test values
         src1 = 1
@@ -1305,8 +1335,8 @@ class TestCPU(unittest.TestCase):
 
     def test_store_16_bits(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("fe209d23")
+        
+        instr = self.hex_str_2_unsigned_int("fe209d23")
 
         # Test values
         src1 = 1
@@ -1330,8 +1360,8 @@ class TestCPU(unittest.TestCase):
 
     def test_store_word(self):
         self.init_core()
-        bm = BitManip32()
-        instr = bm.hex_str_2_unsigned_int("fe20aa23")
+        
+        instr = self.hex_str_2_unsigned_int("fe20aa23")
 
         # Test values
         src1 = 1
