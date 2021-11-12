@@ -7,5 +7,6 @@ sys.path.append(x)
 
 print(x)
 
-from cpu import RV32ICORE
+import cpu
+from rv32ui import RV32UI
 from bit_manipulation import BitManip, XLen

@@ -1,35 +1,34 @@
 #!/usr/bin/env python3
+from enum import Enum
 from numpy.core.numeric import binary_repr, base_repr
 from typing import List
 from bit_manipulation import BitManip, XLen
-from numpy import int32, uint32, uint16, uint8 
-from rv32ui import *
+from numpy import uint8
+from rv32ui import RV32UI 
+from rv64ui import RV64UI
+import isa
 
+class Endianess(Enum):
+	LITTLE = 0
+	BIG = 1
 
-class RV32ICORE():
-	""" RISC-V 32-bit I-core base class """
+class RISCVCore():
+	""" RISC-V I-core class """
 
-	PC: uint32 = uint32(0)
-	old_PC: uint32 = uint32(0)
-	REG_FILE: List[uint32] = [uint32(0)] * 32
-	xlen: int = 32
-	instruction_set: dict = {
-		0x18 : ConditionalBranch_32,
-		0x1b : JumpAndLink_32,
-		0x19 : JumpAndLinkRegsiter_32,
-		0x0d : LoadUpperImm_32,
-		0x05 : AddUpperImmPC_32,
-		0x04 : RegImmInt_32,
-		0x0C : RegRegInt_32,
-		0x00 : Load_32,
-		0x08 : Store_32,
-		0x03 : Fence_32,
-		0x01 : NOP_32
-	}
+	def __init__(
+		self, mem_size: int = 1024, isa = RV64UI,
+		endianess = Endianess.LITTLE, xlen = XLen._64BIT):
+		""" Initializes CPU parameters """
 
-	def __init__(self, mem_size: int = 1024, endianess: str = "little"):
-		self.memory = Memory_32(mem_size, endianess)
-		self.previous_instruction = NOP_32(0, self)
+		self.bm = BitManip(xlen)
+		self.isa = isa
+		self.memory = Memory(mem_size, endianess, xlen)
+		self.PC = isa.uint(0)
+		self.previous_instruction = isa.NOP(0, self)
+		self.old_PC = isa.uint(0)
+		self.REG_FILE = [isa.uint(0)] * 32
+		self.xlen = xlen
+		self.instruction_set = isa.get_instructions()
 
 	def incr_PC(self, factor: int=0x4):
 		# Store a temporary PC
@@ -37,7 +36,7 @@ class RV32ICORE():
 
 		self.PC+=factor
 		if self.PC >= self.memory.mem_size:
-			self.PC = uint32(0)
+			self.PC = self.isa.uint(0)
 
 		# Return old PC 
 		return self.old_PC
@@ -59,7 +58,7 @@ class RV32ICORE():
 		with open(reg_dmp, "w") as reg_file:
 			reg_file.writelines(
 				f"{hex(addr)} | {hex(self.REG_FILE[addr])}\n" 
-					for addr in range(32)
+					for addr in range(self.xlen.value)
 			)
 
 	def instr_dump(self):
@@ -74,115 +73,144 @@ class RV32ICORE():
 		print("==========================================================\n")
 	
 	def st_run(self):
+		"""single thread pipeline
+		No need to implement a seperate stage for write back in model
+		Execute stratergies can deal with store instructions. 
 
-		# single thread pipeline:
-
-		# Fetch -> Decode -> Execute
+		Fetch -> Decode -> Execute
+		"""
 		self.previous_instruction = self.execute(self.decode(self.fetch()))
 
-		# Write back ???
-		# No need to implement a seperate stage for write back in model
-		# Execute stratergies can deal with store instructions. 
-			
-	def fetch(self) -> uint32:
-		return uint32(self.memory.read_mem_32(self.PC))
+	def fetch(self):
+		return self.isa.uint(
+			self.memory.read_mem_word(self.PC, self.xlen.value//8)
+		)
 				
-	def decode(self, instr : uint32) -> InstructionTemplate_32:
+	def decode(self, instr) -> isa.InstructionTemplate:
 
-		bm = BitManip(XLen._32BIT)
+		# print(instr)
 
-		opcode1_0, w2 = bm.get_sub_bits_from_instr(instr, 1, 0) 
-		opcode6_2, w5 = bm.get_sub_bits_from_instr(instr, 6, 2)
+		opcode1_0, w2 = self.bm.get_sub_bits_from_instr(instr, 1, 0) 
+		opcode6_2, w5 = self.bm.get_sub_bits_from_instr(instr, 6, 2)
 
 		if  opcode1_0 != 3:
-			raise ValueError(f" Not a valid RV32I instruction. \
-				instr[1:0] = {binary_repr(opcode1_0, 2)}")
+			raise ValueError(
+				(f" Not a valid {self.isa.name} instruction."), 
+				(f"instr[1:0] = {binary_repr(opcode1_0, 2)}")
+			)
 
 		if opcode6_2 not in self.instruction_set.keys():
-			raise ValueError(f" Not a valid RV32I instruction. \
-				instr[6:2] = {opcode6_2}")
+			raise ValueError(
+				(f" Not a valid {self.isa.name} instruction."),
+				(f"instr[6:2] = {opcode6_2}")
+			)
 
 		return self.instruction_set[opcode6_2](instr, self)
 	
-	def execute(self, instr: InstructionTemplate_32) -> InstructionTemplate_32:
+	def execute(self, instr: isa.InstructionTemplate) -> isa.InstructionTemplate:
 
-		if not isinstance(instr, InstructionTemplate_32):
-			raise TypeError(f" Invalid instruction type, \
-				must be a InstructionTemplate_32 object")
+		if not isinstance(instr, isa.InstructionTemplate):
+			raise TypeError(
+				(f" Invalid instruction type, "),
+				(f"must be a isa.InstructionTemplate object")
+			)
 
 		instr.execute()
 
 		return instr
 
 
-class Memory_32():
+class Memory():
 	""" 
-	A byte-addressable 32-bit memory model. 
+	A byte-addressable memory model. 
 	Provides memory manipulation interface/routines 
 	"""
 
-	def __init__(self, mem_size: int = 1024, endianess: str = "little"):
+	def __init__(
+		self, mem_size: int = 1024, endianess = Endianess.LITTLE, 
+		xlen = XLen._64BIT): 
 
-		if endianess == "little":
-			self.byte_significance = [4, 3, 2, 1]
-
-		elif endianess == "big":
-			self.byte_significance = [1, 2, 3, 4]
-
-		else:
-			raise ValueError("Invalid endianess, \
-				must be a string matching either 'little' or 'big'")
-		
 		self.endianess = endianess
+		self.bm = BitManip(xlen)
 		self.mem_size = mem_size
-		self.memory = [uint8(0)] * mem_size * 4
+		self.memory = [uint8(0)] * mem_size * (xlen.value//8)
+		self.xlen = xlen
 	
-	def get_bytes_from_word(self, data: uint32) -> tuple:
+	def get_bytes_from_word(self, data) -> tuple:
 
-		bm = BitManip(XLen._32BIT)
-		x3_val, w8 = bm.get_sub_bits_from_instr(data, 31, 24)
-		x2_val, w8 = bm.get_sub_bits_from_instr(data, 23, 16)
-		x1_val, w8 = bm.get_sub_bits_from_instr(data, 15, 8)
-		x0_val, w8 = bm.get_sub_bits_from_instr(data, 7, 0)
+		x7_val = 0 
+		x6_val = 0 
+		x5_val = 0 
+		x4_val = 0 
 
-		# MSB -> LSB
-		return (x3_val, x2_val, x1_val, x0_val)
+		x3_val, w8 = self.bm.get_sub_bits_from_instr(data, 31, 24)
+		x2_val, w8 = self.bm.get_sub_bits_from_instr(data, 23, 16)
+		x1_val, w8 = self.bm.get_sub_bits_from_instr(data, 15,  8)
+		x0_val, w8 = self.bm.get_sub_bits_from_instr(data,  7,  0)
 
-	def write_mem_32(self, addr: int, data: uint32):
+		if self.xlen == XLen._64BIT:
+			x7_val, w8 = self.bm.get_sub_bits_from_instr(data, 63, 56)
+			x6_val, w8 = self.bm.get_sub_bits_from_instr(data, 55, 48)
+			x5_val, w8 = self.bm.get_sub_bits_from_instr(data, 47, 40)
+			x4_val, w8 = self.bm.get_sub_bits_from_instr(data, 39, 32)
+		
+		return (x0_val, x1_val, x2_val, x3_val, x4_val, x5_val, x6_val, x7_val)
 
-		data_bytes_tpl = self.get_bytes_from_word(data)
+	def write_mem_word(self, addr: int, data: int, word_len: int):
 
-		for x in range(4):
-			self.write_mem_8(
-				addr + self.byte_significance[x] - 1, data_bytes_tpl[x]
+		if word_len > (self.xlen.value//8):
+			raise ValueError(
+				f"{word_len} is bigger than xlen/8. xlen = {self.xlen.value}"
 			)
 
-	def write_mem_16(self, addr: int, data: uint16):
+		# Split data into bytes, represented as tuple of bytes
+		data_bytes_tpl = self.get_bytes_from_word(data)
+		
+		[self.write_mem_8(addr + x, uint8(data_bytes_tpl[x])) 
+			for x in range(word_len)
+		]
 
-		x3_val, x2_val, msb, lsb = self.get_bytes_from_word(data)
+	def read_mem_word(self, addr: int, word_len: int):
 
-		self.write_mem_8(addr + self.byte_significance[1] % 2, msb)
-		self.write_mem_8(addr + self.byte_significance[2] % 2, lsb)
+		if word_len > (self.xlen.value//8):
+			raise ValueError(
+				f"{word_len} is bigger than xlen/8. xlen = {self.xlen.value}"
+			)
+
+		word, wx = self.bm.concat_bits(
+			[(self.read_mem_8(addr + x), 8) for x in range(word_len-1, -1, -1)]
+		)
+
+		return word
+
+	def write_mem_64(self, addr: int, data:int):
+		if self.xlen != XLen._64BIT:
+			assert RuntimeWarning(
+				"Are you sure you wanna a 64 bit write, cpu is 32 bits"
+			)
+		self.write_mem_word(addr, data, 8)
+
+	def write_mem_32(self, addr: int, data: int):
+		self.write_mem_word(addr, data, 4)
+
+	def write_mem_16(self, addr: int, data: int):
+		self.write_mem_word(addr, data, 2)
 
 	def write_mem_8(self, addr: int, data: uint8):
 		self.memory[addr] = data
-			
+
+	def read_mem_64(self, addr: int):
+		if self.xlen != XLen._64BIT:
+			assert RuntimeWarning(
+				"Are you sure you wanna a 64 bit read, cpu is 32 bits"
+			)
+		return self.read_mem_word(addr, 8)
+
 	def read_mem_32(self, addr: int):
+		return self.read_mem_word(addr, 4)
 
-		return BitManip(XLen._32BIT).concat_bits(
-			[(self.read_mem_8(addr + self.byte_significance[x] -1), 8) 
-				for x in range(4)
-			]
-		)[0]
-
-	def read_mem_16(self, addr: int) -> uint16:
-
-		bm = BitManip(XLen._32BIT)
-
-		msb = self.read_mem_8(addr + self.byte_significance[1] % 2)
-		lsb = self.read_mem_8(addr + self.byte_significance[2] % 2)
-
-		return bm.concat_bits([(msb, 8), (lsb, 8)])[0]
+	def read_mem_16(self, addr: int):
+		return self.read_mem_word(addr, 2)
 
 	def read_mem_8(self, addr: int) -> uint8:
 		return uint8(self.memory[addr])
@@ -190,15 +218,16 @@ class Memory_32():
 	def mem_dump(self, file_name: str):
 		with open(file_name, "w") as mem_file:
 			mem_file.writelines(
-				["{0:5s} : 0x{1:8s}\n".format(
-					hex(addr),
-					self.hexstr(self.memory[addr+3]) + 
-					self.hexstr(self.memory[addr+2]) +
-					self.hexstr(self.memory[addr+1]) +
-					self.hexstr(self.memory[addr])
-				) 
-				for addr in range(0, len(self.memory), 4)
-			])
+				[
+					self.mem_format(addr)
+					for addr in range(0, len(self.memory), self.xlen.value//8)
+				]
+			)
+		
+	def mem_format(self, addr: int) -> str:
+		data = (self.read_mem_word(addr, (self.xlen.value//8)))
+		hex_data = base_repr(data, 16)
+		return (f"{hex(addr)} : {hex_data}\n")
 
 	def hexstr(self, val: int) -> str:
 
@@ -213,4 +242,65 @@ class Hex:
 	def __init__(self, value : int):
 		self.value = hex(value)
 
+def mem_test():
+	mem = Memory(endianess=Endianess.BIG, xlen=XLen._64BIT)
 
+	data = 0xaa3355ff
+
+	print(base_repr(data, 16, 0))
+
+	mem.write_mem_32(1, data)
+
+	data = mem.read_mem_32(1)
+
+	print(base_repr(data, 16, 0))
+
+	mem.mem_dump("./mem.dump")
+
+def cpu_test():
+	core = RISCVCore(isa=RV32UI(), xlen=XLen._32BIT)
+	bm = BitManip(XLen._32BIT)
+
+	data = "00004517"
+
+	instr = bm.hex_str_2_unsigned_int("28301863")
+
+	offset, width_offset = bm.concat_bits([
+		bm.get_sub_bits_from_instr(instr, 31, 31),
+		bm.get_sub_bits_from_instr(instr, 8, 8),
+		bm.get_sub_bits_from_instr(instr, 30, 25), 
+		bm.get_sub_bits_from_instr(instr, 11, 8)
+	])
+
+	print(offset)
+
+	# Initialize self.core registers
+	core.REG_FILE[0] = 0
+	core.REG_FILE[3] = 6
+
+	# PC offset
+	offset = 328
+
+	# Initialize memory with instruction
+	core.memory.write_mem_32(0, instr)
+
+	print(core.memory.read_mem_word(0, 32//8))
+
+	# Single test run
+	core.st_run()
+
+	core.core_dump()
+
+	print(core.PC)
+
+
+def bit_manip_test():
+	bm = BitManip(XLen._64BIT)
+	data = 0xaa3355ff
+	print(bm.get_sub_bits_from_instr(data, 0, 0)[0])
+
+def main():
+	cpu_test()
+
+if __name__ == "__main__":
+	main()

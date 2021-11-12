@@ -1,45 +1,53 @@
-from abc import ABC, abstractmethod
+import isa
 from bit_manipulation import BitManip, XLen
-from numpy import int32, uint32, uint16, uint8 
-from numpy import left_shift, right_shift, bitwise_and, bitwise_xor, bitwise_or
+import numpy as np
 
-class InstructionTemplate_32(ABC):
-	""" Template for 32-bit instrutions """
+class RV32UI:
 
-	@abstractmethod
-	def __init__(self, instr: uint32, core_state):
-		pass
+	def __init__(self):
+		self.name = "RISC-V 32 bit user "
+		self.uint = np.uint32
+		self.int = np.int32
+		self.NOP = NOP_32
+		self.instructions = {
+				0x18 : ConditionalBranch_32,
+				0x1b : JumpAndLink_32,
+				0x19 : JumpAndLinkRegsiter_32,
+				0x0d : LoadUpperImm_32,
+				0x05 : AddUpperImmPC_32,
+				0x04 : RegImmInt_32,
+				0x0C : RegRegInt_32,
+				0x00 : Load_32,
+				0x08 : Store_32,
+				0x03 : Fence_32,
+				0x01 : NOP_32
+			}
 
-	@abstractmethod
-	def execute(self):
-		pass
+	def get_instructions(self):
+		return self.instructions
 
-	@abstractmethod
-	def dump_instr(self) -> tuple:
-		return (())
-
-class ConditionalBranch_32(InstructionTemplate_32):
+class ConditionalBranch_32(isa.InstructionTemplate):
 
 	def beq(self):
-		if int32(self.src1_val) == int32(self.src2_val):
+		if np.int32(self.src1_val) == np.int32(self.src2_val):
 			self.core_state.incr_PC(self.offset)
 		else:
 			self.core_state.incr_PC()
 	
 	def bne(self):
-		if int32(self.src1_val) != int32(self.src2_val):
+		if np.int32(self.src1_val) != np.int32(self.src2_val):
 			self.core_state.incr_PC(self.offset)
 		else:
 			self.core_state.incr_PC()
 		
 	def blt(self):
-		if int32(self.src1_val) < int32(self.src2_val):
+		if np.int32(self.src1_val) < np.int32(self.src2_val):
 			self.core_state.incr_PC(self.offset)
 		else:
 			self.core_state.incr_PC()
 	
 	def bge(self):
-		if int32(self.src1_val) > int32(self.src2_val):
+		if np.int32(self.src1_val) > np.int32(self.src2_val):
 			self.core_state.incr_PC(self.offset)
 		else:
 			self.core_state.incr_PC()
@@ -56,8 +64,7 @@ class ConditionalBranch_32(InstructionTemplate_32):
 		else:
 			self.core_state.incr_PC()
 
-	def __init__(self, instr: uint32, core_state):
-
+	def __init__(self, instr: np.uint32, core_state):
 		bm = BitManip(XLen._32BIT)
 		self.branch_function = {
 			0 : self.beq,
@@ -100,9 +107,9 @@ class ConditionalBranch_32(InstructionTemplate_32):
 		)
 	
 
-class JumpAndLinkRegsiter_32(InstructionTemplate_32):
+class JumpAndLinkRegsiter_32(isa.InstructionTemplate):
 
-	def __init__(self, instr: uint32, core_state):
+	def __init__(self, instr: np.uint32, core_state):
 
 		bm = BitManip(XLen._32BIT)
 		self.core_state = core_state
@@ -123,11 +130,11 @@ class JumpAndLinkRegsiter_32(InstructionTemplate_32):
 		self.core_state.REG_FILE[self.dst] = self.core_state.PC + 4
 
 		# Add offset and content in REG_FILE[src]
-		result = self.offset + int32(self.core_state.REG_FILE[self.src])
+		result = self.offset + np.int32(self.core_state.REG_FILE[self.src])
 
 		# Set the least significant bit of result to 0. 
 		# Don't ask me why? It's in the RISCV specification. 
-		self.core_state.PC = bitwise_and(result, 0xfffffffe)
+		self.core_state.PC = np.bitwise_and(result, 0xfffffffe)
 	
 	def dump_instr(self) -> tuple:
 		return (
@@ -139,9 +146,9 @@ class JumpAndLinkRegsiter_32(InstructionTemplate_32):
 		)
 
 
-class JumpAndLink_32(InstructionTemplate_32):
+class JumpAndLink_32(isa.InstructionTemplate):
 
-	def __init__(self, instr: uint32, core_state):
+	def __init__(self, instr: np.uint32, core_state):
 		bm = BitManip(XLen._32BIT)
 
 		self.offset = bm.sign_extend_nbit_2_int(bm.concat_bits([
@@ -168,9 +175,9 @@ class JumpAndLink_32(InstructionTemplate_32):
 			("dest", self.dst)
 		)
 
-class LoadUpperImm_32(InstructionTemplate_32):
+class LoadUpperImm_32(isa.InstructionTemplate):
 
-	def __init__(self, instr: uint32, core_state):
+	def __init__(self, instr: np.uint32, core_state):
 		bm = BitManip(XLen._32BIT)
 
 		self.u_imm, w32 = bm.concat_bits(
@@ -193,9 +200,9 @@ class LoadUpperImm_32(InstructionTemplate_32):
 			("dst", self.dst),
 		)
 
-class AddUpperImmPC_32(InstructionTemplate_32): 
+class AddUpperImmPC_32(isa.InstructionTemplate): 
 
-	def __init__(self, instr: uint32, core_state):
+	def __init__(self, instr: np.uint32, core_state):
 		bm = BitManip(XLen._32BIT)
 
 		self.u_imm, w32 = bm.concat_bits(
@@ -218,49 +225,49 @@ class AddUpperImmPC_32(InstructionTemplate_32):
 		)
 
 
-class RegImmInt_32(InstructionTemplate_32):
+class RegImmInt_32(isa.InstructionTemplate):
 
-	def addi(self) -> uint32:
-		return int32(self.src_val) + self.signed_imm_arith
+	def addi(self) -> np.uint32:
+		return np.int32(self.src_val) + self.signed_imm_arith
 	
-	def slli(self) -> uint32:
-		return left_shift(self.src_val, self.shamt)
+	def slli(self) -> np.uint32:
+		return np.left_shift(self.src_val, self.shamt)
 
-	def slti(self) -> uint32:
-		if int32(self.src_val) < self.signed_imm_arith:
+	def slti(self) -> np.uint32:
+		if np.int32(self.src_val) < self.signed_imm_arith:
 			return 1
 		else:
 			return 0
 
-	def sltiu(self) -> uint32:
+	def sltiu(self) -> np.uint32:
 		if self.src_val < self.unsigned_imm_arith:
 			return 1
 		else:
 			return 0
 		
-	def xori(self) -> uint32:
-		return bitwise_xor(self.src_val, self.unsigned_imm_arith)
+	def xori(self) -> np.uint32:
+		return np.bitwise_xor(self.src_val, self.unsigned_imm_arith)
 
-	def srai_srli(self) -> uint32:
+	def srai_srli(self) -> np.uint32:
 		# SRA
 		if self.imm_shift_v == 32:
-			return right_shift(int32(self.src_val), self.shamt)
+			return np.right_shift(np.int32(self.src_val), self.shamt)
 		
 		# SRL
 		elif self.imm_shift_v == 0:
-			return right_shift(self.src_val, self.shamt)
+			return np.right_shift(self.src_val, self.shamt)
 		
 		else:
 			raise ValueError(f" immediate[11:5] needs to be either 32 or 0. \
 				Actual imm = {self.imm_shift_v}")
 	
-	def ori(self) -> uint32:
-		return bitwise_or(self.src_val, self.unsigned_imm_arith)
+	def ori(self) -> np.uint32:
+		return np.bitwise_or(self.src_val, self.unsigned_imm_arith)
 		
-	def andi(self) -> uint32:
-		return bitwise_and(self.src_val, self.unsigned_imm_arith)
+	def andi(self) -> np.uint32:
+		return np.bitwise_and(self.src_val, self.unsigned_imm_arith)
 
-	def __init__(self, instr: uint32, core_state):
+	def __init__(self, instr: np.uint32, core_state):
 		bm = BitManip(XLen._32BIT)
 
 		# funct3 dict
@@ -284,13 +291,13 @@ class RegImmInt_32(InstructionTemplate_32):
 		self.shamt, w5 = bm.get_sub_bits_from_instr(instr, 24, 20)
 		self.src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
 		self.dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
-		self.src_val = uint32(core_state.REG_FILE[self.src])
+		self.src_val = np.uint32(core_state.REG_FILE[self.src])
 		self.core_state = core_state
 
 	def execute(self):
 		# Execute instruction based on funct3
 		self.core_state.REG_FILE[self.dest] = (
-			uint32(self.int_function[self.funct3]())
+			np.uint32(self.int_function[self.funct3]())
 		)
 
 		self.core_state.incr_PC()
@@ -316,59 +323,59 @@ class RegImmInt_32(InstructionTemplate_32):
 			("imm", self.imm_arith_v)
 		)
 
-class RegRegInt_32(InstructionTemplate_32):
+class RegRegInt_32(isa.InstructionTemplate):
 
-	def add_sub(self) -> uint32:
+	def add_sub(self) -> np.uint32:
 
 		# ADD
 		if self.funct7 == 0:
-			return int32(self.src1_val) + int32(self.src2_val)
+			return np.int32(self.src1_val) + np.int32(self.src2_val)
 
 		# SUB
 		elif self.funct7 == 32:
-			return int32(self.src1_val) - int32(self.src2_val)
+			return np.int32(self.src1_val) - np.int32(self.src2_val)
 
 		else:
 			raise ValueError(f"funct7 needs to be either 32 or 0. \
 				Actual funct7 = {self.funct7}")
 		
-	def sll(self) -> uint32:
-		return left_shift(self.src1_val, self.shift_val)
+	def sll(self) -> np.uint32:
+		return np.left_shift(self.src1_val, self.shift_val)
 	
-	def slt(self) -> uint32:
-		if int32(self.src1_val) < int32(self.src2_val):
+	def slt(self) -> np.uint32:
+		if np.int32(self.src1_val) < np.int32(self.src2_val):
 			return 1
 		else:
 			return 0
 
-	def sltu(self) -> uint32:
+	def sltu(self) -> np.uint32:
 		if self.src1_val < self.src2_val:
 			return 1
 		else:
 			return 0
 	
-	def xor_(self) -> uint32:
-		return bitwise_xor(self.src1_val, self.src2_val)
+	def xor_(self) -> np.uint32:
+		return np.bitwise_xor(self.src1_val, self.src2_val)
 
-	def sra_srl(self) -> uint32:
+	def sra_srl(self) -> np.uint32:
 
 		if self.funct7 == 32:
-			return right_shift(int32(self.src1_val), self.shift_val)
+			return np.right_shift(np.int32(self.src1_val), self.shift_val)
 		
 		elif self.funct7 == 0:
-			return right_shift(self.src1_val, self.shift_val)
+			return np.right_shift(self.src1_val, self.shift_val)
 		
 		else:
 			raise ValueError(f" funct7 needs to be either 32 or 0. \
 			Actual funct7 = {self.funct7}")
 	
-	def or_(self) -> uint32:
-		return bitwise_or(self.src1_val, self.src2_val)
+	def or_(self) -> np.uint32:
+		return np.bitwise_or(self.src1_val, self.src2_val)
 	
-	def and_(self) -> uint32:
-		return bitwise_and(self.src1_val, self.src2_val)
+	def and_(self) -> np.uint32:
+		return np.bitwise_and(self.src1_val, self.src2_val)
 
-	def __init__(self, instr: uint32, core_state):
+	def __init__(self, instr: np.uint32, core_state):
 		bm = BitManip(XLen._32BIT)
 
 		self.int_function = {
@@ -392,9 +399,9 @@ class RegRegInt_32(InstructionTemplate_32):
 
 		self.dest, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
 
-		self.src1_val = uint32(core_state.REG_FILE[self.src1])
+		self.src1_val = np.uint32(core_state.REG_FILE[self.src1])
 
-		self.src2_val = uint32(core_state.REG_FILE[self.src2])
+		self.src2_val = np.uint32(core_state.REG_FILE[self.src2])
 
 		self.shift_val, w5 = bm.get_sub_bits_from_instr(self.src2_val, 4, 0)
 
@@ -402,7 +409,7 @@ class RegRegInt_32(InstructionTemplate_32):
 
 	def execute(self):
 		self.core_state.REG_FILE[self.dest] = (
-			uint32(self.int_function[self.funct3]())
+			np.uint32(self.int_function[self.funct3]())
 		)
 		self.core_state.incr_PC()
 	
@@ -418,24 +425,24 @@ class RegRegInt_32(InstructionTemplate_32):
 			("dest", self.dest),
 		)
 
-class Load_32(InstructionTemplate_32):
+class Load_32(isa.InstructionTemplate):
 
-	def lb(self) -> uint32:
+	def lb(self) -> np.uint32:
 		return self.bm.sign_extend_nbit_2_unsigned_int((self.lbu(), 8))
 
-	def lh(self) -> uint32:
+	def lh(self) -> np.uint32:
 		return self.bm.sign_extend_nbit_2_unsigned_int((self.lhu(), 16))
 	
-	def lw(self) -> uint32:
+	def lw(self) -> np.uint32:
 		return self.core_state.memory.read_mem_32(self.mem_addr)
 	
-	def lhu(self) -> uint32:
+	def lhu(self) -> np.uint32:
 		return self.core_state.memory.read_mem_16(self.mem_addr)
 	
-	def lbu(self) -> uint32:
+	def lbu(self) -> np.uint32:
 		return self.core_state.memory.read_mem_8(self.mem_addr)
 
-	def __init__(self, instr: uint32, core_state):
+	def __init__(self, instr: np.uint32, core_state):
 
 		self.bm = BitManip(XLen._32BIT)
 
@@ -464,7 +471,7 @@ class Load_32(InstructionTemplate_32):
 					Actual funct3 = {self.funct3}")
 
 		self.core_state.REG_FILE[self.dest] = (
-			uint32(self.load_function[self.funct3]())
+			np.uint32(self.load_function[self.funct3]())
 		)
 		self.core_state.incr_PC()
 	
@@ -478,18 +485,18 @@ class Load_32(InstructionTemplate_32):
 		)
 
 
-class Store_32(InstructionTemplate_32):
+class Store_32(isa.InstructionTemplate):
 
 	def sb(self):
-		self.core_state.memory.write_mem_8(self.mem_addr, uint8(self.src2_val))
+		self.core_state.memory.write_mem_8(self.mem_addr, np.uint8(self.src2_val))
 
 	def sh(self):
-		self.core_state.memory.write_mem_16(self.mem_addr, uint16(self.src2_val))
+		self.core_state.memory.write_mem_16(self.mem_addr, np.uint16(self.src2_val))
 
 	def sw(self):
-		self.core_state.memory.write_mem_32(self.mem_addr, uint32(self.src2_val))
+		self.core_state.memory.write_mem_32(self.mem_addr, np.uint32(self.src2_val))
 
-	def __init__(self, instr: uint32, core_state):
+	def __init__(self, instr: np.uint32, core_state):
 		bm = BitManip(XLen._32BIT)
 
 		imm = bm.sign_extend_nbit_2_int(bm.concat_bits([
@@ -540,9 +547,9 @@ class Store_32(InstructionTemplate_32):
 		)
 
 
-class NOP_32(InstructionTemplate_32):
+class NOP_32(isa.InstructionTemplate):
 
-	def __init__(self, instr: uint32, core_state):
+	def __init__(self, instr: np.uint32, core_state):
 		self.PC_state = core_state.PC
 	
 	def execute(self):
@@ -551,8 +558,8 @@ class NOP_32(InstructionTemplate_32):
 	def dump_instr(self) -> tuple:
 		return super().dump_instr()
 
-class Fence_32(InstructionTemplate_32):
-	def __init__(instr: uint32, core_state):
+class Fence_32(isa.InstructionTemplate):
+	def __init__(instr: np.uint32, core_state):
 		bm = BitManip(XLen._32BIT)
 
 		#TODO: finish this routine

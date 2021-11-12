@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from context import RV32ICORE
+from context import cpu
+from context import RV32UI
 from context import BitManip, XLen
 from numpy import uint8, uint16, uint32, int32, iinfo
 import unittest
@@ -10,7 +11,7 @@ class TestRV32UI(unittest.TestCase):
     REG_FILE = [uint32(0)] * 32
 
     def init_core(self):
-        self.core = RV32ICORE()
+        self.core = cpu.RISCVCore(isa=RV32UI(), xlen=XLen._32BIT)
     
     def init_memory(self, addr, data):
         self.core.memory.write_mem_32(addr, data)
@@ -21,7 +22,7 @@ class TestRV32UI(unittest.TestCase):
     def run_branch_instructions(self, instr):
 
         # Create rv32i instance
-        self.core = RV32ICORE()
+        self.init_core()
 
         # Copy register file into core
         self.core.REG_FILE = self.REG_FILE
