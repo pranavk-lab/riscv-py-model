@@ -3,7 +3,7 @@ from enum import Enum
 from numpy.core.numeric import binary_repr, base_repr
 from typing import List
 from bit_manipulation import BitManip, XLen
-from numpy import uint8
+from numpy import uint8, float64
 from rv32ui import RV32UI 
 from rv64ui import RV64UI
 import isa
@@ -16,7 +16,7 @@ class RISCVCore():
 	""" RISC-V I-core class """
 
 	def __init__(
-		self, mem_size: int = 1024, isa = RV64UI,
+		self, mem_size: int = 1024, isa = RV64UI(),
 		endianess = Endianess.LITTLE, xlen = XLen._64BIT):
 		""" Initializes CPU parameters """
 
@@ -119,7 +119,7 @@ class RISCVCore():
 
 		return instr
 
-
+#TODO: Fix 64 bit memory calls. 
 class Memory():
 	""" 
 	A byte-addressable memory model. 
@@ -213,7 +213,7 @@ class Memory():
 		return self.read_mem_word(addr, 2)
 
 	def read_mem_8(self, addr: int) -> uint8:
-		return uint8(self.memory[addr])
+		return uint8(self.memory[int(addr)])
 
 	def mem_dump(self, file_name: str):
 		with open(file_name, "w") as mem_file:
@@ -258,40 +258,28 @@ def mem_test():
 	mem.mem_dump("./mem.dump")
 
 def cpu_test():
-	core = RISCVCore(isa=RV32UI(), xlen=XLen._32BIT)
-	bm = BitManip(XLen._32BIT)
+	core = RISCVCore(isa=RV64UI(), xlen=XLen._64BIT)
+	bm = BitManip(XLen._64BIT)
 
-	data = "00004517"
+	instr = bm.hex_str_2_unsigned_int("ffa09703")
 
-	instr = bm.hex_str_2_unsigned_int("28301863")
+	# Test values
+	src = 1
+	dest = 14
+	imm = -6
 
-	offset, width_offset = bm.concat_bits([
-		bm.get_sub_bits_from_instr(instr, 31, 31),
-		bm.get_sub_bits_from_instr(instr, 8, 8),
-		bm.get_sub_bits_from_instr(instr, 30, 25), 
-		bm.get_sub_bits_from_instr(instr, 11, 8)
-	])
+	core.REG_FILE[src] = 0x25
+	core.memory.write_mem_32(0x1d, 0x53a46732)
 
-	print(offset)
-
-	# Initialize self.core registers
-	core.REG_FILE[0] = 0
-	core.REG_FILE[3] = 6
-
-	# PC offset
-	offset = 328
+	# Initialize PC
+	PC_test = 0x4 * 20
+	core.PC = PC_test
 
 	# Initialize memory with instruction
-	core.memory.write_mem_32(0, instr)
-
-	print(core.memory.read_mem_word(0, 32//8))
+	core.memory.write_mem_32(core.PC, instr)
 
 	# Single test run
 	core.st_run()
-
-	core.core_dump()
-
-	print(core.PC)
 
 
 def bit_manip_test():

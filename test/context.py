@@ -9,4 +9,5 @@ print(x)
 
 import cpu
 from rv32ui import RV32UI
+from rv64ui import RV64UI
 from bit_manipulation import BitManip, XLen
