@@ -21,7 +21,7 @@ class BitManip:
 	ii64_min: int64 = int64(iinfo(int64).min)
 
 	def __init__(self, xlen=XLen._32BIT):
-		self.xlen: Enum = xlen.value
+		self.xlen: int= xlen.value
 
 		if self.xlen == XLen._64BIT.value:
 			self.utype = uint64
@@ -55,6 +55,9 @@ class BitManip:
 
 		if upper < lower:
 			raise ValueError("Upper cannot be less than lower")
+
+		if upper >= self.xlen:
+			raise ValueError("upper cannot be out of bounds")
 		
 		# discart MSB bits till "upper"
 		instr = self.utype(left_shift(instr, ((self.xlen-1)- upper)))
