@@ -21,7 +21,7 @@ coverage run --omi=$OMIT_DIRS ./memory_test.py
 echo "Running RV32ICORE 32-bit tests..."
 coverage run --omit=$OMIT_DIRS ./rv32ui_test.py
 
-echo "Running RV32ICORE 64-bit tests..."
+echo "Running RV64ICORE 64-bit tests..."
 coverage run --omit=$OMIT_DIRS ./rv64ui_test.py
 
 echo -e "\nCreating HTML"
