@@ -9,12 +9,12 @@ import unittest
 
 class TestRV64UI(unittest.TestCase):
 
-    REG_FILE = [uint32(0)] * 32
-    bm = BitManip(XLen._64BIT)
+    REG_FILE = [np.uint64(0)] * 32
+    bm = BitManip(XLen._32BIT)
 
-    def init_core(self):
+    def setUp(self) -> None:
         self.core = cpu.RISCVCore(isa=RV64UI())
-    
+
     def init_memory(self, addr, data):
         self.core.memory.write_mem_32(addr, data)
 
@@ -22,10 +22,6 @@ class TestRV64UI(unittest.TestCase):
         return BitManip(XLen._32BIT).hex_str_2_unsigned_int(hex_str)
 
     def run_branch_instructions(self, instr):
-
-        # Create rv32i instance
-        self.init_core()
-
         # Copy register file into core
         self.core.REG_FILE = self.REG_FILE
 
@@ -47,11 +43,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.PC, 6)
 
     def test_conditional_branch_equals_true(self):
-
-        self.init_core()
-
         instr = self.hex_str_2_unsigned_int("00208663")
-        
 
         # Initialize self.core registers
         self.core.REG_FILE[1] = -5
@@ -69,9 +61,6 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.PC, offset)
 
     def test_conditional_branch_equals_false(self):
-
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("00208663")
 
         # Initialize self.core registers
@@ -90,9 +79,6 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.PC, 4)
 
     def test_conditional_branch_not_equals_true(self):
-
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("28301863")
 
         # Initialize self.core registers
@@ -111,9 +97,6 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.PC, offset)
 
     def test_conditional_branch_not_equals_false(self):
-
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("28301863")
 
         # Initialize self.core registers
@@ -133,8 +116,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_conditional_branch_lt_true(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("00054c63")
 
         # Initialize self.core registers
@@ -154,8 +135,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_conditional_branch_lt_false(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("00054c63")
 
         # Initialize self.core registers
@@ -175,8 +154,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_conditional_branch_gt_true(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("0020d663")
 
         # Initialize self.core registers
@@ -196,8 +173,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_conditional_branch_gt_false(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("0020d663")
 
         # Initialize self.core registers
@@ -217,8 +192,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_conditional_branch_ltu_true(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("0020e663")
 
         # Initialize self.core registers
@@ -238,8 +211,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_conditional_branch_ltu_false(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("0020e663")
 
         # Initialize self.core registers
@@ -259,8 +230,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_conditional_branch_geu_true(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("0020f663")
 
         # Initialize self.core registers
@@ -280,8 +249,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_conditional_branch_geu_false(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("0020f663")
 
         # Initialize self.core registers
@@ -301,24 +268,18 @@ class TestRV64UI(unittest.TestCase):
 
     def test_unknown_opcode1_0_value_error(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("0020f662")
 
         self.assertRaises(ValueError, self.core.decode, instr)
 
     def test_unknown_opcode6_2_value_error(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("0020f6f7")
 
         self.assertRaises(ValueError, self.core.decode, instr)
 
     def test_jump_and_link(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("0100026f")
 
         PC_test = 0x4 * 20
@@ -341,8 +302,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_jump_and_link_register(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("000302e7")
 
         PC_test = 0x4 * 20
@@ -367,8 +326,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_load_upper_imm(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("800002b7")
 
         PC_test = 0x4 * 20
@@ -394,8 +351,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_add_upper_imm_2_pc(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("00004517")
 
         PC_test = 0x4 * 20
@@ -421,8 +376,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_reg_imm_add_positive(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("00108713")
 
         PC_test = 0x4 * 20
@@ -452,8 +405,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_reg_imm_add_negetive(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("00108713")
 
         PC_test = 0x4 * 20
@@ -483,8 +434,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_reg_imm_shift_left(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("00709713")
 
         PC_test = 0x4 * 20
@@ -493,7 +442,7 @@ class TestRV64UI(unittest.TestCase):
         self.core.PC = PC_test
 
         # Set up src register
-        src_val = self.bm.ui64_max
+        src_val = uint32(iinfo(uint32).max)
         self.core.REG_FILE[1] = src_val
 
         # upper immediate. pre-calculated
@@ -510,15 +459,10 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(
-            self.core.REG_FILE[dst], 
-            np.left_shift(src_val, np.uint64(7))
-        ) 
+        self.assertEqual(self.core.REG_FILE[dst], 0xffffff80) 
 
     def test_reg_imm_shift_right_logic(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("0070d713")
 
         PC_test = 0x4 * 20
@@ -527,7 +471,7 @@ class TestRV64UI(unittest.TestCase):
         self.core.PC = PC_test
 
         # Set up src register
-        src_val = self.bm.ui64_max
+        src_val = uint32(iinfo(uint32).max)
         self.core.REG_FILE[1] = src_val
 
         # upper immediate. pre-calculated
@@ -544,13 +488,9 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(
-            self.core.REG_FILE[dst], 
-            np.right_shift(src_val, np.uint64(7))
-        ) 
+        self.assertEqual(self.core.REG_FILE[dst], 0x01ffffff) 
 
     def test_reg_imm_shift_right_arith(self):
-        self.init_core()
         
         instr = self.hex_str_2_unsigned_int("4070d713")
 
@@ -577,22 +517,16 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(
-            self.core.REG_FILE[dst], 
-            np.right_shift(src_val, 7)
-        ) 
+        self.assertEqual(self.core.REG_FILE[dst], 0xffe1ffff) 
 
     def test_shift_imm11_5_exception(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("5070d713")
 
         self.assertRaises(ValueError, self.core.execute, self.core.decode(instr))
 
     def test_reg_imm_slti_true(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("0070a713")
 
         PC_test = 0x4 * 20
@@ -621,8 +555,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0x1) 
 
     def test_reg_imm_slti_false(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("8000a713")
 
         PC_test = 0x4 * 20
@@ -651,8 +584,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0x0) 
 
     def test_reg_imm_sltiu_true(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("8000b713")
 
         PC_test = 0x4 * 20
@@ -681,8 +613,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0x1) 
 
     def test_reg_imm_sltiu_false(self):
-        self.init_core()
-        
+ 
         instr = self.hex_str_2_unsigned_int("0070b713")
 
         PC_test = 0x4 * 20
@@ -711,8 +642,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0x0) 
 
     def test_reg_imm_xor(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("f0f0c713")
 
         PC_test = 0x4 * 20
@@ -741,12 +671,9 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0xf4) 
 
     def test_reg_imm_or(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("f0f0e713")
 
-        bm = BitManip(XLen._64BIT)
-
         PC_test = 0x4 * 20
 
         # Initialize PC
@@ -770,14 +697,11 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(self.core.REG_FILE[dst], bm.ui64_max) 
+        self.assertEqual(self.core.REG_FILE[dst], 0xffffffff) 
 
     def test_reg_imm_and(self):
-        self.init_core()
-        
-        instr = self.hex_str_2_unsigned_int("f0f0f713")
 
-        bm = BitManip(XLen._64BIT)
+        instr = self.hex_str_2_unsigned_int("f0f0f713")
 
         PC_test = 0x4 * 20
 
@@ -802,15 +726,10 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(
-            self.core.REG_FILE[dst], 
-            np.uint64(0xffffffffffffff0b)
-        )
+        self.assertEqual(self.core.REG_FILE[dst], 0xffffff0b) 
 
     def test_reg_reg_add_positive(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("00208733")
 
         PC_test = 0x4 * 20
@@ -840,8 +759,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_reg_reg_add_negetive(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("00208733")
 
         PC_test = 0x4 * 20
@@ -871,8 +788,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_reg_reg_sub_positive(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("40208733")
 
         PC_test = 0x4 * 20
@@ -902,8 +817,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_reg_reg_add_negetive(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("40208733")
 
         PC_test = 0x4 * 20
@@ -933,16 +846,12 @@ class TestRV64UI(unittest.TestCase):
 
     def test_shift_funct7_exception_reg_reg_int(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("50208733")
 
         self.assertRaises(ValueError, self.core.execute, self.core.decode(instr))
 
     def test_reg_reg_shift_left(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("00209733")
 
         PC_test = 0x4 * 20
@@ -972,8 +881,6 @@ class TestRV64UI(unittest.TestCase):
 
     def test_reg_reg_shift_right_logic(self):
 
-        self.init_core()
-        
         instr = self.hex_str_2_unsigned_int("0020d733")
 
         PC_test = 0x4 * 20
@@ -1002,8 +909,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0x0fffffff) 
 
     def test_reg_reg_shift_right_arith(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("4020d733")
 
         PC_test = 0x4 * 20
@@ -1030,22 +936,16 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(
-            self.core.REG_FILE[dst], 
-            np.right_shift(src1_val, src2_val)
-        ) 
+        self.assertEqual(self.core.REG_FILE[dst], 0xffe1ffff) 
 
     def test_shift_imm11_5_exception_reg_reg_int(self):
 
-        self.init_core() 
-        
         instr = self.hex_str_2_unsigned_int("5070d733")
 
         self.assertRaises(ValueError, self.core.execute, self.core.decode(instr))
 
     def test_reg_reg_slti_true(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("0020a733")
 
         PC_test = 0x4 * 20
@@ -1074,8 +974,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0x1) 
 
     def test_reg_reg_slti_false(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("0020a733")
 
         PC_test = 0x4 * 20
@@ -1104,8 +1003,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0x0) 
 
     def test_reg_reg_sltiu_true(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("0020b733")
 
         PC_test = 0x4 * 20
@@ -1134,8 +1032,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0x1) 
 
     def test_reg_reg_sltiu_false(self):
-        self.init_core()
-        
+  
         instr = self.hex_str_2_unsigned_int("0070b733")
 
         PC_test = 0x4 * 20
@@ -1164,8 +1061,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0x0) 
 
     def test_reg_reg_xor(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("0020c733")
 
         PC_test = 0x4 * 20
@@ -1194,8 +1090,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.REG_FILE[dst], 0xf4) 
 
     def test_reg_reg_or(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("0020e733")
 
         PC_test = 0x4 * 20
@@ -1221,14 +1116,10 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(
-            self.bm.int(self.core.REG_FILE[dst]), 
-            bitwise_or(src1_val, src2_val)
-        )
+        self.assertEqual(self.core.REG_FILE[dst], 0xffffffff) 
 
     def test_reg_reg_and(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("0020f733")
 
         PC_test = 0x4 * 20
@@ -1254,14 +1145,10 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(
-            self.bm.int(self.core.REG_FILE[dst]), 
-            np.bitwise_and(src1_val, src2_val)
-        )
+        self.assertEqual(self.core.REG_FILE[dst], 0xffffff0b) 
 
     def test_load_byte(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("ffd08703")
 
         # Test values
@@ -1285,8 +1172,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(uint8(self.core.REG_FILE[dest]), 0xa4)
 
     def test_load_16_bits(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("ffa09703")
 
         # Test values
@@ -1310,8 +1196,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(uint16(self.core.REG_FILE[dest]), 0x53a4)
 
     def test_load_word(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("ff40a703")
 
         # Test values
@@ -1335,8 +1220,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual((self.core.REG_FILE[dest]), 0x53a46732)
 
     def test_store_byte(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("fe208ea3")
 
         # Test values
@@ -1360,8 +1244,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.memory.read_mem_8(0x20), 0x32)
 
     def test_store_16_bits(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("fe209d23")
 
         # Test values
@@ -1385,8 +1268,7 @@ class TestRV64UI(unittest.TestCase):
         self.assertEqual(self.core.memory.read_mem_16(0x20), 0x6732)
 
     def test_store_word(self):
-        self.init_core()
-        
+
         instr = self.hex_str_2_unsigned_int("fe20aa23")
 
         # Test values
@@ -1409,4 +1291,7 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.memory.read_mem_32(0x20), 0x53a46732)
 
-unittest.main()
+
+
+if __name__ == "__main__":
+    unittest.main()
