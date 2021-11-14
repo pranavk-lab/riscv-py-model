@@ -107,7 +107,8 @@ class RISCVCore():
 
 		return self.instruction_set[opcode6_2](instr, self)
 	
-	def execute(self, instr: isa.InstructionTemplate) -> isa.InstructionTemplate:
+	def execute(
+		self, instr: isa.InstructionTemplate) -> isa.InstructionTemplate:
 
 		if not isinstance(instr, isa.InstructionTemplate):
 			raise TypeError(
