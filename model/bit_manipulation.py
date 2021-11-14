@@ -74,16 +74,7 @@ class BitManip:
 		return (bit_vector, (upper-lower) + 1)
 
 	def sign_extend_nbit_2_int(self, args : tuple):
-		vector = args[0]
-		width = args[1]
-
-		last_bit = self.uint(right_shift(self.uint(vector), self.uint(width-1)))
-
-		mask = self.uint(
-			left_shift((self.uint_max * last_bit), self.uint(width))
-		)
-
-		return self.int(bitwise_or(mask, vector))
+		return self.int(self.sign_extend_nbit_2_unsigned_int(args))
 
 	def sign_extend_nbit_2_unsigned_int(self, args : tuple):
 		vector = args[0]
