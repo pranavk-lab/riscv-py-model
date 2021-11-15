@@ -119,22 +119,20 @@ class JumpAndLinkRegsiter(isa.InstructionTemplate):
 
 	def __init__(self, instr: np.uint32, core_state):
 
-		bm = BitManip(core_state.xlen)
+		self.bm = BitManip(core_state.xlen)
 		self.core = core_state
 
-		self.offset = bm.sign_extend_nbit_2_int(
-			bm.get_sub_bits_from_instr(instr, 31, 20)
+		self.offset = self.bm.sign_extend_nbit_2_int(
+			self.bm.get_sub_bits_from_instr(instr, 31, 20)
 		)
 
-		self.src, w5 = bm.get_sub_bits_from_instr(instr, 19, 15)
+		self.src, w5 = self.bm.get_sub_bits_from_instr(instr, 19, 15)
 
-		self.dst, w5 = bm.get_sub_bits_from_instr(instr, 11, 7)
+		self.dst, w5 = self.bm.get_sub_bits_from_instr(instr, 11, 7)
 
 		self.src1_val = core_state.REG_FILE[self.src]
 
 		self.PC_state = self.core.PC
-
-		self.max_uint = bm.uint_max
 
 	def execute(self):
 		self.core.REG_FILE[self.dst] = self.core.PC + 4
@@ -144,7 +142,10 @@ class JumpAndLinkRegsiter(isa.InstructionTemplate):
 
 		# Set the least significant bit of result to 0. 
 		# Don't ask me why? It's in the RISCV specification. 
-		self.core.PC = np.bitwise_and(result, np.left_shift(self.max_uint, 1))
+		self.core.PC = np.bitwise_and(
+			self.core.isa.uint(result), 
+			np.left_shift(self.bm.uint_max, self.core.isa.uint(1))
+		)
 	
 	def dump_instr(self) -> tuple:
 		return (
@@ -227,7 +228,7 @@ class AddUpperImmPC(isa.InstructionTemplate):
 
 	def execute(self):
 
-		self.core.REG_FILE[self.dst] = (
+		self.core.REG_FILE[self.dst] = self.core.isa.uint(
 			self.u_imm + self.core.incr_PC()
 		)
 

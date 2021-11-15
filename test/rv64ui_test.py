@@ -10,7 +10,7 @@ import unittest
 class TestRV64UI(unittest.TestCase):
 
     REG_FILE = [np.uint64(0)] * 32
-    bm = BitManip(XLen._32BIT)
+    bm = BitManip(XLen._64BIT)
 
     def setUp(self) -> None:
         self.core = cpu.RISCVCore(isa=RV64UI())
@@ -334,7 +334,7 @@ class TestRV64UI(unittest.TestCase):
         self.core.PC = PC_test
 
         # upper immediate. pre-calculated
-        u_imm = 2147483648
+        u_imm = 9223372036854775808
 
         # destination register
         dst = 5
@@ -359,7 +359,7 @@ class TestRV64UI(unittest.TestCase):
         self.core.PC = PC_test
 
         # upper immediate. pre-calculated
-        u_imm =  16384 + PC_test
+        u_imm = 70368744177664 + PC_test
 
         # destination register
         dst = 10
@@ -442,11 +442,11 @@ class TestRV64UI(unittest.TestCase):
         self.core.PC = PC_test
 
         # Set up src register
-        src_val = uint32(iinfo(uint32).max)
+        src_val = self.bm.uint_max
         self.core.REG_FILE[1] = src_val
 
-        # upper immediate. pre-calculated
-        imm =  1
+        # shift. pre-calculated
+        shift =  self.bm.uint(7)
 
         # destination register
         dst = 14
@@ -459,7 +459,9 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(self.core.REG_FILE[dst], 0xffffff80) 
+        self.assertEqual(
+            self.core.REG_FILE[dst], np.left_shift(src_val, shift)
+        )
 
     def test_reg_imm_shift_right_logic(self):
 
@@ -500,11 +502,11 @@ class TestRV64UI(unittest.TestCase):
         self.core.PC = PC_test
 
         # Set up src register
-        src_val = 0xf0ffffff
+        src_val = self.bm.int_max
         self.core.REG_FILE[1] = src_val
 
         # upper immediate. pre-calculated
-        imm =  1
+        shift =  self.bm.int(7)
 
         # destination register
         dst = 14
@@ -517,7 +519,9 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(self.core.REG_FILE[dst], 0xffe1ffff) 
+        self.assertEqual(
+            self.core.REG_FILE[dst], np.right_shift(src_val, shift)
+        )
 
     def test_shift_imm11_5_exception(self):
 
@@ -697,7 +701,7 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(self.core.REG_FILE[dst], 0xffffffff) 
+        self.assertEqual(self.core.REG_FILE[dst], self.bm.uint_max)
 
     def test_reg_imm_and(self):
 
@@ -713,7 +717,9 @@ class TestRV64UI(unittest.TestCase):
         self.core.REG_FILE[1] = src_val
 
         # upper immediate. pre-calculated
-        imm =  1
+        imm =  self.bm.sign_extend_nbit_2_unsigned_int(
+            (3855, 12)
+        )
 
         # destination register
         dst = 14
@@ -726,7 +732,8 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(self.core.REG_FILE[dst], 0xffffff0b) 
+        self.assertEqual(
+            self.core.REG_FILE[dst], bitwise_and(self.bm.uint(src_val), imm))
 
     def test_reg_reg_add_positive(self):
 
@@ -936,7 +943,9 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(self.core.REG_FILE[dst], 0xffe1ffff) 
+        self.assertEqual(
+            self.core.REG_FILE[dst], np.right_shift(src1_val, src2_val)
+        )
 
     def test_shift_imm11_5_exception_reg_reg_int(self):
 
@@ -1116,7 +1125,7 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(self.core.REG_FILE[dst], 0xffffffff) 
+        self.assertEqual(self.core.REG_FILE[dst], self.bm.uint_max) 
 
     def test_reg_reg_and(self):
 
@@ -1145,7 +1154,10 @@ class TestRV64UI(unittest.TestCase):
 
         self.assertEqual(self.core.PC, PC_test + 0x4)
 
-        self.assertEqual(self.core.REG_FILE[dst], 0xffffff0b) 
+        self.assertEqual(
+            self.core.REG_FILE[dst], 
+            bitwise_and(self.bm.uint(src1_val), self.bm.uint(src2_val))
+        )
 
     def test_load_byte(self):
 

@@ -26,7 +26,8 @@ class RISCVCore():
 		self.PC = isa.uint(0)
 		self.previous_instruction = isa.NOP(0, self)
 		self.old_PC = isa.uint(0)
-		self.REG_FILE = [isa.uint(0)] * 32
+		self.REG_FILE_SIZE = 32
+		self.REG_FILE = [isa.uint(0)] * self.REG_FILE_SIZE
 		self.xlen = xlen
 		self.instruction_set = isa.get_instructions()
 
@@ -58,7 +59,7 @@ class RISCVCore():
 		with open(reg_dmp, "w") as reg_file:
 			reg_file.writelines(
 				f"{hex(addr)} | {hex(self.REG_FILE[addr])}\n" 
-					for addr in range(self.xlen.value)
+					for addr in range(self.REG_FILE_SIZE)
 			)
 
 	def instr_dump(self):
@@ -134,8 +135,8 @@ class Memory():
 		self.endianess = endianess
 		self.bm = BitManip(xlen)
 		self.mem_size = mem_size
-		self.memory = [uint8(0)] * mem_size * (xlen.value//8)
 		self.bytes_per_word = xlen.value//8
+		self.memory = [uint8(0)] * self.mem_size * self.bytes_per_word
 		self.xlen = xlen
 	
 	def get_bytes_from_word(self, data, word_len):
@@ -232,15 +233,17 @@ class Memory():
 			mem_file.writelines(
 				[
 					self.mem_format(addr)
-					for addr in range(0, len(self.memory), self.xlen.value//8)
+					for addr in range(0, len(self.memory), self.bytes_per_word)
 				]
 			)
 		
 	def mem_format(self, addr: int) -> str:
 		data, width = self.read_stored_word(addr)
-		hex_data = base_repr(int(data), 16)
+		hex_data = base_repr(data, self.bm.uint(16))
 		offset = self.xlen.value//4 - len(hex_data)
-		zero_padded_data = base_repr(data, 16, offset)
+		zero_padded_data = base_repr(
+			data, self.bm.uint(16), self.bm.uint(offset)
+		)
 		return (f"{hex(addr)} : {zero_padded_data}\n")
 
 	def hexstr(self, val: int) -> str:
@@ -277,25 +280,34 @@ def cpu_test():
 	core = RISCVCore(isa=RV64UI(), xlen=XLen._64BIT)
 	bm = BitManip(XLen._64BIT)
 
-	instr = bm.hex_str_2_unsigned_int("ffa09703")
+	instr = bm.hex_str_2_unsigned_int("f0f0f713")
 
-	# Test values
-	src = 1
-	dest = 14
-	imm = -6
-
-	core.REG_FILE[src] = 0x25
-	core.memory.write_mem_32(0x1d, 0x53a46732)
+	PC_test = 0x4 * 20
 
 	# Initialize PC
-	PC_test = 0x4 * 20
 	core.PC = PC_test
+
+	# Set up src register
+	src_val = -5
+	core.REG_FILE[1] = src_val
+
+	# upper immediate. pre-calculated
+	imm = (bm.sign_extend_nbit_2_unsigned_int((3855, 12)))
+
+	# destination register
+	dst = 14
 
 	# Initialize memory with instruction
 	core.memory.write_mem_32(core.PC, instr)
 
 	# Single test run
 	core.st_run()
+
+	core.core_dump()
+
+	print(imm)
+
+	print(bm.uint(src_val))
 
 
 def bit_manip_test():
@@ -304,8 +316,8 @@ def bit_manip_test():
 	print(bm.get_sub_bits_from_instr(data, 0, 0)[0])
 
 def main():
-	# cpu_test()
-	mem_test()
+	cpu_test()
+	# mem_test()
 
 if __name__ == "__main__":
 	main()

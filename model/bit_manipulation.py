@@ -77,8 +77,8 @@ class BitManip:
 		return self.int(self.sign_extend_nbit_2_unsigned_int(args))
 
 	def sign_extend_nbit_2_unsigned_int(self, args : tuple):
-		vector = args[0]
-		width = args[1]
+		vector = self.uint(args[0])
+		width = self.uint(args[1])
 
 		last_bit = self.uint(right_shift(self.uint(vector), self.uint(width-1)))
 
