@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from enum import Enum
 from numpy.core.numeric import binary_repr, base_repr
-from typing import List
+from typing import List, Tuple
 from bit_manipulation import BitManip, XLen
 from numpy import uint8, float64
 from rv32ui import RV32UI 
@@ -135,27 +135,22 @@ class Memory():
 		self.bm = BitManip(xlen)
 		self.mem_size = mem_size
 		self.memory = [uint8(0)] * mem_size * (xlen.value//8)
+		self.bytes_per_word = xlen.value//8
 		self.xlen = xlen
 	
-	def get_bytes_from_word(self, data) -> tuple:
+	def get_bytes_from_word(self, data, word_len):
 
-		x7_val = 0 
-		x6_val = 0 
-		x5_val = 0 
-		x4_val = 0 
+		word_bytes = [
+			self.bm.get_sub_bits_from_instr(data, x, x-7)[0] 
+			for x in range(self.xlen.value-1, -1, -8)
+		]
 
-		x3_val, w8 = self.bm.get_sub_bits_from_instr(data, 31, 24)
-		x2_val, w8 = self.bm.get_sub_bits_from_instr(data, 23, 16)
-		x1_val, w8 = self.bm.get_sub_bits_from_instr(data, 15,  8)
-		x0_val, w8 = self.bm.get_sub_bits_from_instr(data,  7,  0)
+		if self.endianess == Endianess.LITTLE:
+			word_bytes.reverse()
+			return word_bytes
 
-		if self.xlen == XLen._64BIT:
-			x7_val, w8 = self.bm.get_sub_bits_from_instr(data, 63, 56)
-			x6_val, w8 = self.bm.get_sub_bits_from_instr(data, 55, 48)
-			x5_val, w8 = self.bm.get_sub_bits_from_instr(data, 47, 40)
-			x4_val, w8 = self.bm.get_sub_bits_from_instr(data, 39, 32)
-		
-		return (x0_val, x1_val, x2_val, x3_val, x4_val, x5_val, x6_val, x7_val)
+		# BIG ENDIAN
+		return word_bytes[self.bytes_per_word-word_len:self.bytes_per_word]
 
 	def write_mem_word(self, addr: int, data: int, word_len: int):
 
@@ -165,30 +160,43 @@ class Memory():
 			)
 
 		# Split data into bytes, represented as tuple of bytes
-		data_bytes_tpl = self.get_bytes_from_word(data)
-		
-		[self.write_mem_8(addr + x, uint8(data_bytes_tpl[x])) 
+		data_bytes_tpl = self.get_bytes_from_word(data, word_len)
+
+		if self.endianess == Endianess.LITTLE:
+			[self.write_mem_8(addr + x, data_bytes_tpl[x]) 
+				for x in range(word_len)
+			]
+			return 
+
+		# BIG ENDIAN
+		[self.write_mem_8(addr + x, data_bytes_tpl[x]) 
 			for x in range(word_len)
 		]
 
-	def read_mem_word(self, addr: int, word_len: int):
+	def read_mem_word(self, addr: int, word_len: int) -> int:
+		"""Always Reads most significant byte first"""
 
 		if word_len > (self.xlen.value//8):
 			raise ValueError(
 				f"{word_len} is bigger than xlen/8. xlen = {self.xlen.value}"
 			)
 
-		word, wx = self.bm.concat_bits(
-			[(self.read_mem_8(addr + x), 8) for x in range(word_len-1, -1, -1)]
-		)
+		if self.endianess == Endianess.LITTLE:
+			return self.bm.concat_bits(
+				[(self.read_mem_8(addr + x), 8) 
+					for x in range(word_len-1, -1, -1)
+				]
+			)[0]
 
-		return word
+		# BIG ENDIAN
+		return self.bm.concat_bits(
+				[(self.read_mem_8(addr + x), 8) 
+					for x in range(word_len)
+				]
+			)[0]
+
 
 	def write_mem_64(self, addr: int, data:int):
-		if self.xlen != XLen._64BIT:
-			assert RuntimeWarning(
-				"Are you sure you wanna a 64 bit write, cpu is 32 bits"
-			)
 		self.write_mem_word(addr, data, 8)
 
 	def write_mem_32(self, addr: int, data: int):
@@ -198,13 +206,16 @@ class Memory():
 		self.write_mem_word(addr, data, 2)
 
 	def write_mem_8(self, addr: int, data: uint8):
-		self.memory[addr] = data
+		self.memory[addr] = uint8(data)
+	
+	def read_stored_word(self, addr: int):
+		return self.bm.concat_bits(
+			[(self.memory[addr + x], 8) 
+				for x in range(self.xlen.value//8)
+			]
+		)
 
 	def read_mem_64(self, addr: int):
-		if self.xlen != XLen._64BIT:
-			assert RuntimeWarning(
-				"Are you sure you wanna a 64 bit read, cpu is 32 bits"
-			)
 		return self.read_mem_word(addr, 8)
 
 	def read_mem_32(self, addr: int):
@@ -226,9 +237,11 @@ class Memory():
 			)
 		
 	def mem_format(self, addr: int) -> str:
-		data = (self.read_mem_word(addr, (self.xlen.value//8)))
-		hex_data = base_repr(data, 16)
-		return (f"{hex(addr)} : {hex_data}\n")
+		data, width = self.read_stored_word(addr)
+		hex_data = base_repr(int(data), 16)
+		offset = self.xlen.value//4 - len(hex_data)
+		zero_padded_data = base_repr(data, 16, offset)
+		return (f"{hex(addr)} : {zero_padded_data}\n")
 
 	def hexstr(self, val: int) -> str:
 
@@ -244,17 +257,19 @@ class Hex:
 		self.value = hex(value)
 
 def mem_test():
-	mem = Memory(endianess=Endianess.BIG, xlen=XLen._64BIT)
+	mem = Memory(endianess=Endianess.BIG, xlen=XLen._32BIT)
 
 	data = 0xaa3355ff
 
 	print(base_repr(data, 16, 0))
 
-	mem.write_mem_32(1, data)
+	mem.write_mem_8(1, data)
 
-	data = mem.read_mem_32(1)
+	data = mem.read_mem_8(1)
 
-	print(base_repr(data, 16, 0))
+	print(data)
+
+	print(base_repr(int(data), 16, 0))
 
 	mem.mem_dump("./mem.dump")
 
@@ -289,7 +304,8 @@ def bit_manip_test():
 	print(bm.get_sub_bits_from_instr(data, 0, 0)[0])
 
 def main():
-	cpu_test()
+	# cpu_test()
+	mem_test()
 
 if __name__ == "__main__":
 	main()
