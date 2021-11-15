@@ -284,12 +284,16 @@ class RegImmInt(isa.InstructionTemplate):
 	def andi(self) -> int:
 		return np.bitwise_and(self.src_val, self.unsigned_imm_arith)
 
-	def __init__(self, instr: np.uint32, core_state, base_instr: bool = True):
+	def __init__(
+		self, 
+		instr: np.uint32, 
+		core_state, 
+		base_instr = isa.InstructionType.BASE_INSTR):
 
 		# If rv64ui 32-bit compatible instruction
 		self.bm = BitManip(XLen._32BIT)
 
-		if base_instr:
+		if base_instr == isa.InstructionType.BASE_INSTR:
 			self.bm = BitManip(core_state.xlen)
 
 		# funct3 dict
@@ -410,12 +414,16 @@ class RegRegInt(isa.InstructionTemplate):
 	def and_(self) -> int:
 		return np.bitwise_and(self.src1_val, self.src2_val)
 
-	def __init__(self, instr: np.uint32, core_state, base_instr: bool = True):
+	def __init__(
+		self, 
+		instr: np.uint32, 
+		core_state, 
+		base_instr = isa.InstructionType.BASE_INSTR):
 
 		# If rv64ui 32-bit compatible instruction
 		self.bm = BitManip(XLen._32BIT)
 
-		if base_instr:
+		if base_instr == isa.InstructionType.BASE_INSTR:
 			self.bm = BitManip(core_state.xlen)
 
 		self.int_function = {
@@ -638,7 +646,7 @@ class Fence(isa.InstructionTemplate):
 class RegImmInt32Compat(RegImmInt):
 
 	def __init__(self, instr: np.uint64, core_state):
-		super().__init__(instr, core_state, False)
+		super().__init__(instr, core_state, isa.InstructionType.DERIVED_INSTR)
 		
 	def execute(self):
 		super().execute()
@@ -650,7 +658,7 @@ class RegImmInt32Compat(RegImmInt):
 class RegRegInt32Compat(RegRegInt):
 
 	def __init__(self, instr: np.uint64, core_state):
-		super().__init__(instr, core_state, False)
+		super().__init__(instr, core_state, isa.InstructionType.DERIVED_INSTR)
 
 	def execute(self):
 		super().execute()

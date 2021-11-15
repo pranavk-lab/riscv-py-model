@@ -1,4 +1,12 @@
 from abc import ABC, abstractmethod
+from enum import Enum
+
+from enum import Enum
+
+class InstructionType(Enum):
+	BASE_INSTR = 0
+	DERIVED_INSTR = 1
+
 
 class InstructionTemplate(ABC):
 	""" Template for instrutions """
