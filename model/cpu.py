@@ -6,6 +6,7 @@ from bit_manipulation import BitManip, XLen
 from numpy import uint8, float64
 from rv32ui import RV32UI 
 from rv64ui import RV64UI
+from rv64si import RV64SI
 import isa
 
 class Endianess(Enum):
@@ -277,10 +278,10 @@ def mem_test():
 	mem.mem_dump("./mem.dump")
 
 def cpu_test():
-	core = RISCVCore(isa=RV64UI(), xlen=XLen._64BIT)
+	core = RISCVCore(isa=RV64SI(), xlen=XLen._64BIT)
 	bm = BitManip(XLen._64BIT)
 
-	instr = bm.hex_str_2_unsigned_int("f0f0f713")
+	instr = bm.hex_str_2_unsigned_int("00000073")
 
 	PC_test = 0x4 * 20
 

@@ -11,6 +11,15 @@ development or RTL verification.
 Use https://github.com/riscv-ovpsim/imperas-riscv-tests.git as formal RISC-V 
 model for software development and HW DV.
 
+Supported Instructions
+--------------------------
+
+TVM Name | Description
+--- | ---
+`rv32ui` | RV32 user-level, integer only
+`rv32si` | RV32 supervisor-level, integer only
+`rv64ui` | RV64 user-level, integer only
+`rv64si` | RV64 supervisor-level, integer only
 
 Quickstart
 ----------------
@@ -72,17 +81,13 @@ for x in TEST_2_ADD:
 Future Work
 ----------------
 
-Currently the model only supports 32-bit I instructions. Future plans to 
-add following riscv instructions.
+Currently the model only supports integer instructions. Future work to add
+floating point and vector support.
 
 TVM Name | Description
 --- | ---
-`rv32ui` | RV32 user-level, integer only
-`rv32si` | RV32 supervisor-level, integer only
-`rv64ui` | RV64 user-level, integer only
 `rv64uf` | RV64 user-level, integer and floating-point
 `rv64uv` | RV64 user-level, integer, floating-point, and vector
-`rv64si` | RV64 supervisor-level, integer only
 `rv64sv` | RV64 supervisor-level, integer and vector
 
 Source, https://github.com/riscv/riscv-tests
