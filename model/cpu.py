@@ -122,7 +122,7 @@ class RISCVCore():
 
 		return instr
 
-#TODO: Fix 64 bit memory calls. 
+
 class Memory():
 	""" 
 	A byte-addressable memory model. 
