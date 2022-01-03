@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from context import cpu
-#!/usr/bin/env python3
 from context import BitManip, XLen
 import unittest
 
@@ -97,5 +96,5 @@ class TestMemory(unittest.TestCase):
             val_read, mem.bm.get_sub_bits_from_instr(val, 8*word_len-1, 0)[0]
         )
 
-
-unittest.main()
+if __name__ == "__main__":
+    unittest.main()
