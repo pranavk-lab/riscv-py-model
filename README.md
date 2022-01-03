@@ -26,6 +26,7 @@ Quickstart
 
     $ git clone https://github.com/pranavk-lab/riscv-py-model.git
     $ cd riscv-py-model
+    $ pip3 install -r requirements.txt
 
 How to Run Model
 -------------------------------
