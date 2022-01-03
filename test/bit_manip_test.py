@@ -301,4 +301,5 @@ class TestBitManip64(unittest.TestCase):
             binary_conat_sign_ext, '00000000000000011000001110111100'
         )
 
-unittest.main()
+if __name__ == "__main__":
+    unittest.main()
