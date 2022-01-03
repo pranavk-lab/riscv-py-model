@@ -26,7 +26,6 @@ Quickstart
 
     $ git clone https://github.com/pranavk-lab/riscv-py-model.git
     $ cd riscv-py-model
-    $ pip3 install -r requirements.txt
 
 How to Run Model
 -------------------------------
@@ -40,8 +39,13 @@ Basic Structure of Test Code
 --------------------------------
 
 ```python
-from cpu import RV32ICORE
-from bit_manipulation import BitManip32 
+#!/usr/bin/env python3
+
+import sys
+sys.path.append('../model/')
+from cpu import RISCVCore
+from rv32ui import RV32UI
+from bit_manipulation import XLen
 
 # Specify the test hex codes 
 TEST_2_ADD = [
@@ -57,16 +61,13 @@ TEST_2_ADD = [
 ]
 
 # Create the riscv instance. 
-core = RV32ICORE(8192, "little")
-
-# Create the bit manipulation instance. (Optional)
-bm = BitManip32()
+core = RISCVCore(isa=RV32UI(), xlen=XLen._32BIT)
 
 # Copy code in virtual memeory
 addr = 0x0000174
 core.PC = addr
 for x in TEST_2_ADD:
-    core.memory.write_mem_32(addr, bm.hex_str_2_unsigned_int(x))
+    core.memory.write_mem_32(addr, core.bm.hex_str_2_unsigned_int(x))
     addr+=4
 
 # Get debug statements. 
